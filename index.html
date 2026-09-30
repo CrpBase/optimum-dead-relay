@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OPTIMUM // DEAD RELAY</title>
+<meta name="description" content="Carry a data block through a dying network, then cross into the world where Optimum speeds up delivery. A free browser game.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Optimum: Dead Relay">
+<meta property="og:title" content="Optimum: Dead Relay">
+<meta property="og:description" content="Carry a data block through a dying network, then cross into the world where Optimum speeds up delivery. A free browser game.">
+<meta property="og:url" content="https://crpbase.github.io/optimum-dead-relay/">
+<meta property="og:image" content="https://crpbase.github.io/optimum-dead-relay/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Optimum: Dead Relay, a dark network world and a bright Optimum world">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Optimum: Dead Relay">
+<meta name="twitter:description" content="Carry a data block through a dying network, then cross into the world where Optimum speeds up delivery.">
+<meta name="twitter:image" content="https://crpbase.github.io/optimum-dead-relay/og.png">
+<meta name="twitter:image:alt" content="Optimum: Dead Relay, a dark network world and a bright Optimum world">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500&family=Geist+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -166,7 +181,7 @@
         color:var(--platinum);font-family:var(--mono);font-size:10px;letter-spacing:.2em;padding:5px 10px}
   .lang:hover{color:var(--alabaster);border-color:rgba(255,251,251,.5)}
   .lang:focus-visible{outline:2px solid var(--azure);outline-offset:2px}
-  .stat{display:flex;gap:26px;flex-wrap:wrap;margin-top:28px;padding-top:22px;border-top:1px solid rgba(211,219,226,.14)}
+  .stat{display:flex;gap:26px;flex-wrap:wrap;margin-top:28px}
   .stat div .n{font-family:var(--mono);font-size:22px;font-weight:300;color:var(--alabaster)}
   .stat div .k{margin-top:5px}
   .foot{margin-top:30px;font-size:12px;color:var(--platinum);font-weight:300}
@@ -261,6 +276,21 @@
 .teamBio{display:grid;grid-template-columns:minmax(160px,240px) 1fr;gap:30px;max-height:78vh;overflow-y:auto;text-align:left;padding:6px}
 .teamBio img{width:100%;height:auto;border-radius:12px}.teamBio h2{font-size:32px;line-height:1.2;margin:16px 0}.teamBio p{font:17px/1.7 Arial,sans-serif;color:#deede1;margin:16px 0}.teamBio .teamSource{font-size:12px;color:#9db8a5}
 @media(max-width:650px){.teamBio{grid-template-columns:1fr}.teamBio img{max-width:150px}.teamBio h2{font-size:26px}}
+  .versus{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px}
+  .versus>div{background:rgba(255,251,251,.045);border-radius:14px;padding:16px 18px}
+  .versus .n{font-family:var(--mono);font-size:30px;font-weight:300;color:var(--alabaster);margin-top:8px}
+  .versus .fast{background:rgba(100,226,127,.10)}
+  .versus .fast .n{color:#9ff0ae}
+  .lb{margin-top:30px}
+  .lb h3{font-size:15px;font-weight:400;margin:0 0 12px;color:var(--steel)}
+  .lb ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+  .lb li{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;background:rgba(255,251,251,.035);font-size:14px;color:var(--steel)}
+  .lb li .r{font-family:var(--mono);color:var(--platinum);font-size:12px}
+  .lb li .t{font-family:var(--mono);color:var(--alabaster)}
+  .lb li .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lb li.me{background:rgba(100,226,127,.14);color:var(--alabaster)}
+  .vol{pointer-events:auto;display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--platinum);padding:6px 4px}
+  .vol input{pointer-events:auto;accent-color:#a5dfa8;width:120px}
 </style>
 </head>
 <body>
@@ -317,7 +347,10 @@ const BR = {
 };
 
 /* ---------------- localisation ---------------- */
-let LANG=(navigator.languages||[navigator.language||'']).some(l=>/^uk\b/i.test(l))?'ua':'en';
+const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+let LANG=(()=>{const saved=store.get('deadrelay_lang');if(saved==='ua'||saved==='en')return saved;
+  return (navigator.languages||[navigator.language||'']).some(l=>/^uk\b/i.test(l))?'ua':'en';})();
+document.documentElement.lang=LANG==='ua'?'uk':'en';
 const STR={
 en:{
   objective:'Objective', window:'Uplink window', lampCell:'Lamp cell', optimum:'Optimum',
@@ -622,6 +655,12 @@ function loadingStatus(message,progress){
  const meter=document.getElementById('modelProgress');if(meter&&Number.isFinite(progress))meter.value=progress;
 }
 const modelYield=()=>new Promise(resolve=>setTimeout(resolve,0));
+// While the player is in the first world, statue work runs in small slices so frames stay smooth.
+let TEAM_MODEL_URGENT=false,modelYieldAt=0;
+async function modelBudget(){
+ if(performance.now()<modelYieldAt)return;
+ await modelYield();modelYieldAt=performance.now()+(TEAM_MODEL_URGENT?40:6);
+}
 // Preserve fine head geometry; simplify dense folds and keep UV islands
 // separate. The supplied textures and normal maps remain intact.
 async function prepareStatueGeometry(geometry,onProgress){
@@ -643,7 +682,7 @@ async function prepareStatueGeometry(geometry,onProgress){
   let id=buckets.get(key);if(id===undefined){id=total++;buckets.set(key,id);vertexCluster[id]=cluster;}
   remap[i]=id;const a=id*8;counts[id]++;
   sums[a]+=x;sums[a+1]+=y;sums[a+2]+=z;sums[a+3]+=normal.getX(i);sums[a+4]+=normal.getY(i);sums[a+5]+=normal.getZ(i);sums[a+6]+=u;sums[a+7]+=v;
-  if(i%65536===0){onProgress?.(i/pos.count*.7);await modelYield();}
+  if((i&4095)===0){if(i%65536===0)onProgress?.(i/pos.count*.7);await modelBudget();}
  }
  const p=new Float32Array(total*3),n=new Float32Array(total*3),t=new Float32Array(total*2);
  for(let i=0;i<total;i++){
@@ -655,7 +694,7 @@ async function prepareStatueGeometry(geometry,onProgress){
  for(let i=0;i<indices.count;i+=3){
   const a=remap[indices.getX(i)],b=remap[indices.getX(i+1)],c=remap[indices.getX(i+2)];
   if(vertexCluster[a]!==vertexCluster[b]&&vertexCluster[b]!==vertexCluster[c]&&vertexCluster[c]!==vertexCluster[a]){packed[k++]=a;packed[k++]=b;packed[k++]=c;}
-  if(i%196608===0){onProgress?.(.7+.3*i/indices.count);await modelYield();}
+  if(i%12288===0){if(i%196608===0)onProgress?.(.7+.3*i/indices.count);await modelBudget();}
  }
  const result=new THREE.BufferGeometry();result.setAttribute('position',new THREE.BufferAttribute(p,3));result.setAttribute('normal',new THREE.BufferAttribute(n,3));result.setAttribute('uv',new THREE.BufferAttribute(t,2));result.setIndex(new THREE.BufferAttribute(packed.slice(0,k),1));
  result.computeBoundingBox();result.computeBoundingSphere();result.userData.sourceTriangles=indices.count/3;result.userData.gameTriangles=k/3;
@@ -699,8 +738,16 @@ async function waitForModelRetry(index){
   pick.onchange=()=>{const selected=Array.from(pick.files||[]);if(selected.length)done(selected);};
  });
 }
-async function preloadTeamModels(){
+function teamModelsReady(){return TEAM_MODEL_FILES.every((_,i)=>!!TEAM_MODEL_TEMPLATES[i]);}
+async function ensureTeamModels(){
+ TEAM_MODEL_URGENT=true;
+ while(!teamModelsReady()){
+  try{await preloadTeamModels();}catch(e){TEAM_MODEL_LOADING=null;}
+ }
+}
+async function preloadTeamModels(opts={}){
  if(TEAM_MODEL_LOADING)return TEAM_MODEL_LOADING;
+ const background=!!opts.background;
  TEAM_MODEL_LOADING=(async()=>{
   const localFiles=new Map();
   for(let i=0;i<TEAM_MODEL_FILES.length;i++){
@@ -715,10 +762,13 @@ async function preloadTeamModels(){
      // Upload maps and draw once behind the loading screen before the first level.
      const staging=new THREE.Scene(),view=new THREE.PerspectiveCamera(45,1,.1,50),copy=TEAM_MODEL_TEMPLATES[i].clone(true);
      staging.add(copy,new THREE.HemisphereLight(0xffffff,0x67756a,1));view.position.set(0,4,13);view.lookAt(0,4,0);
-     renderer.compile?.(staging,view);renderer.render(staging,view);staging.remove(copy);
+     const stagingTarget=new THREE.WebGLRenderTarget(64,64);
+     renderer.compile?.(staging,view);renderer.setRenderTarget(stagingTarget);renderer.render(staging,view);renderer.setRenderTarget(null);
+     stagingTarget.dispose();staging.remove(copy);
      ready=true;loadingStatus(bi(`Готово · ${TEAM[i].name}`,`Ready · ${TEAM[i].name}`),(i+1)/3);await modelYield();
     }catch(err){
      TEAM_MODEL_TEMPLATES[i]=null;console.warn('Statue load failed:',TEAM_MODEL_FILES[i],err);
+     if(background&&!TEAM_MODEL_URGENT){TEAM_MODEL_LOADING=null;throw err;}
      const picked=await waitForModelRetry(i);if(picked)picked.forEach(f=>localFiles.set(f.name.toLowerCase(),f));
     }finally{if(objectURL)URL.revokeObjectURL(objectURL);}
    }
@@ -966,6 +1016,8 @@ const QPX=[1.0,1.0,TOUCH?1.0:1.35],QSHADOW=[512,1024,2048],QGRASS=[13000,32000,6
       QTEX=[512,768,1024],QBLOOM=[false,false,true],QSEG=[8,12,20],QSHAFT=[false,false,true],
       QFLOWER=[900,2200,4200];
 let TS=512;
+// Drops render resolution a little when the frame rate sinks, and restores it when there is headroom.
+const ADAPT={scale:1,ema:1/60,t:0,calm:0};
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 const rand=(a,b)=>a+Math.random()*(b-a);
@@ -1238,6 +1290,16 @@ const Snd={
   monster:null,monsterBuffer:null,lastMonster:-99,
   ok:false,ctx:null,master:null,noiseBuf:null,droneGain:null,huntGain:null,
   loading:null,
+  muted:store.get('deadrelay_mute')==='1',
+  musicVol:(()=>{const v=parseFloat(store.get('deadrelay_music'));return Number.isFinite(v)?Math.min(1,Math.max(0,v)):1;})(),
+  setMuted(on){
+    this.muted=!!on;store.set('deadrelay_mute',this.muted?'1':'0');
+    if(this.ok){const t=this.ctx.currentTime,g=this.master.gain;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(this.muted?0:.9,t+.12);}
+  },
+  setMusicVol(v){
+    this.musicVol=Math.min(1,Math.max(0,v));store.set('deadrelay_music',String(this.musicVol));
+    if(this.ok&&this.musicOn&&this.musicGain){const t=this.ctx.currentTime,g=this.musicGain.gain;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(.85*this.musicVol,t+.15);}
+  },
   prepare(){
     if(this.loading)return this.loading;
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return Promise.resolve();
@@ -1259,7 +1321,7 @@ const Snd={
   build(){
     if(this.ok||!this.ctx)return;
     this.ok=true;
-    this.master=this.ctx.createGain();this.master.gain.value=.9;this.master.connect(this.ctx.destination);
+    this.master=this.ctx.createGain();this.master.gain.value=this.muted?0:.9;this.master.connect(this.ctx.destination);
     // noise buffer
     const n=this.ctx.sampleRate*2,b=this.ctx.createBuffer(1,n,this.ctx.sampleRate),d=b.getChannelData(0);
     for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
@@ -1330,7 +1392,7 @@ const Snd={
       this.musicSend=d;
     }
     const t=c.currentTime,g=this.musicGain.gain;
-    g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(.85,t+3);
+    g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(.85*this.musicVol,t+3);
     this.mStep=0;this.mNext=t+.15;
     clearInterval(this.mTimer);this.mTimer=setInterval(()=>this.schedMusic(),30);
   },
@@ -2944,7 +3006,7 @@ function coldOpen(after){
    resultNick=name;sound();state='brief';form.hidden=true;button.hidden=false;
    const reply=document.createElement('p');reply.className='l crt-reply';reply.textContent='> '+name;log.appendChild(reply);
    const mission=document.createElement('p');mission.className='l';log.appendChild(mission);log.scrollTop=log.scrollHeight;
-   const message=bi('Добре, '+name+'. Потрібно доставити дані в блокчейні.\n\nСпочатку ти пройдеш мережею без Optimum. Будь обережний.\n\nТвоя задача — знайти відсутні частини й доставити повний блок.\n\nЯк виберешся, на тебе чекає швидкий і приємний світ. Там доставку прискорює Optimum.',
+   const message=bi('Добре, '+name+'. Потрібно доставити дані в блокчейні.\n\nСпочатку ти пройдеш мережею без Optimum. Будь обережний.\n\nТвоя задача: знайти відсутні частини й доставити повний блок.\n\nЯк виберешся, на тебе чекає швидкий і приємний світ. Там доставку прискорює Optimum.',
      'Alright, '+name+'. We need to deliver data across the blockchain.\n\nFirst, you’ll travel through a network without Optimum. Be careful.\n\nFind the missing pieces and deliver the complete block.\n\nMake it through, and a faster, calmer world awaits. There, Optimum speeds up delivery.');
    write(mission,message,()=>{state='ready';button.textContent=bi('Прочитав. Почати →','Read. Begin →');});
  };
@@ -2957,7 +3019,7 @@ function coldOpen(after){
 function applyBright(){postMat.uniforms.uBright.value=1.0;}
 function applyQuality(){
   TS=QTEX[QUAL];
-  renderer.setPixelRatio(Math.min(devicePixelRatio,QPX[QUAL]));
+  renderer.setPixelRatio(Math.min(devicePixelRatio,QPX[QUAL])*ADAPT.scale);
   lamp.shadow.mapSize.set(QSHADOW[QUAL],QSHADOW[QUAL]);
   if(lamp.shadow.map){lamp.shadow.map.dispose();lamp.shadow.map=null;}
   renderer.shadowMap.type=QUAL>0?THREE.PCFSoftShadowMap:THREE.PCFShadowMap;
@@ -2975,9 +3037,11 @@ function screen(html,hud){
   document.getElementById('stick').style.opacity='0';
   if(!hud)miniEl.style.display='none';
   // pause screen keeps its own controls
+  const sb=document.getElementById('sndt');if(sb)sb.onclick=()=>{Snd.unlock();toggleMute();};
+  const mv=document.getElementById('musvol');if(mv){mv.oninput=()=>Snd.setMusicVol(mv.value/100);mv.onkeydown=e=>e.stopPropagation();}
   const lb=document.getElementById('langt');
   if(lb)lb.onclick=()=>{
-    LANG=LANG==='en'?'ua':'en';
+    LANG=LANG==='en'?'ua':'en';store.set('deadrelay_lang',LANG);document.documentElement.lang=LANG==='ua'?'uk':'en';
     applyLang();applyBright();
     if(redrawScreen)redrawScreen();
   };
@@ -3007,7 +3071,7 @@ function hideScreen(){
   if(TOUCH)document.getElementById('touch').classList.add('on');
 }
 
-const eyebrow=t=>`<div class="eyebrow rise"><div class="kicker">${t}</div><div class="rule"></div></div>`;
+const eyebrow=t=>`<div class="eyebrow rise"><div class="kicker">${t}</div></div>`;
 
 /* ---------------- sector map ---------------- */
 const miniEl=document.getElementById('mini');
@@ -3058,6 +3122,14 @@ const RUN={metro:null,field:null};
 const Game={
   state:'menu',lvl:0,time:0,runTime:0,best:null,damage:0,heart:0,dangerLvl:0,
   start(l){
+    if(l===1&&!teamModelsReady()){
+      if(this.state==='models')return;
+      this.state='models';unlockPointer();
+      const load=document.getElementById('load');load.style.display='flex';
+      loadingStatus(bi('Завантаження світу Optimum...','Loading the Optimum world...'));
+      ensureTeamModels().then(()=>{load.style.display='none';this.state='menu';this.start(1);});
+      return;
+    }
     if(l===0){RUN.metro=null;RUN.field=null;}else RUN.field=null;
     this.lvl=l;this.state='play';this.runTime=0;
     try{buildWorld(l);}catch(error){showFrameError(error);return;}
@@ -3092,6 +3164,16 @@ const Game={
   }
 };
 
+function soundControls(){
+  return `<button class="chip" id="sndt" aria-pressed="${Snd.muted}">${soundLabel()}</button>`+
+    `<label class="vol">${bi('МУЗИКА','MUSIC')}<input id="musvol" type="range" min="0" max="100" step="5" value="${Math.round(Snd.musicVol*100)}" aria-label="${bi('Гучність музики','Music volume')}"></label>`;
+}
+function soundLabel(){return Snd.muted?bi('ЗВУК ВИМК · M','SOUND OFF · M'):bi('ЗВУК · M','SOUND ON · M');}
+function toggleMute(){
+  Snd.setMuted(!Snd.muted);
+  const b=document.getElementById('sndt');if(b){b.textContent=soundLabel();b.setAttribute('aria-pressed',String(Snd.muted));}
+  if(Game.state==='play')toast(Snd.muted?bi('Звук вимкнено','Sound off'):bi('Звук увімкнено','Sound on'));
+}
 function pauseScreen(){
   screen(`${eyebrow(T('pEyebrow'))}
     <h2>${T('pTitle')}</h2>
@@ -3101,6 +3183,7 @@ function pauseScreen(){
     <button class="pill quiet" id="quit">${T('pQuit')}</button></div>
     <div class="chips rise">
       <button class="chip" id="langt">${LANG==='en'?'УКР':'ENG'}</button>
+      ${soundControls()}
     </div>`,true);
   document.getElementById('resume').onclick=()=>{Game.state='play';hideScreen();lockPointer();};
   document.getElementById('quit').onclick=()=>menu();
@@ -3132,7 +3215,7 @@ function clearScreen(lvl,t,dupes){
         <div><div class="n">${dupes}</div><div class="k lbl">${T('kDupes')}</div></div>
       </div>
       <div class="body" style="margin-top:26px">${T('c1Next')}</div>
-      <p class="note">${bi('Картка з результатом — після проходження обох світів.','Your result card unlocks after completing both worlds.')}</p></section>`,false);
+      <p class="note">${bi('Картку з результатом отримаєш після проходження обох світів.','Your result card unlocks after completing both worlds.')}</p></section>`,false);
     document.getElementById('next').onclick=()=>Game.start(1);
   }else{
     screen(`${eyebrow(T('c2Eyebrow'))}
@@ -3143,8 +3226,9 @@ function clearScreen(lvl,t,dupes){
         <div class="row mint"><span class="a">▸</span><span>${T('c2Row2')}</span></div>
         <div class="row mint"><span class="a">▸</span><span>${T('c2Row3')}</span></div>
       </div>
+      ${versusBlock()}
       <div class="stat rise">
-        <div><div class="n">${t}</div><div class="k lbl">${T('kTime')}</div></div>
+        ${versusBlock()?'':`<div><div class="n">${t}</div><div class="k lbl">${T('kTime')}</div></div>`}
         <div><div class="n">4 / 7</div><div class="k lbl">${T('kNeed2')}</div></div>
         <div><div class="n">${dupes}</div><div class="k lbl">${T('kDupes')}</div></div>
       </div>
@@ -3155,6 +3239,22 @@ function clearScreen(lvl,t,dupes){
     document.getElementById('menu3').onclick=()=>menu();
   }
   mountResultCard(lvl);
+  mountLeaderboard(lvl);
+}
+function ratioText(r){
+  if(LANG!=='ua')return (r>=10?Math.round(r):r.toFixed(1))+'×';
+  if(r>=10||Math.abs(r-Math.round(r))<.05){
+    const n=Math.round(r),a=n%10,b=n%100;
+    return n+' '+(a===1&&b!==11?'раз':(a>=2&&a<=4&&(b<12||b>14)?'рази':'разів'));
+  }
+  return r.toFixed(1).replace('.',',')+' раза';
+}
+function versusBlock(){
+  if(!Number.isFinite(RUN.metro)||!Number.isFinite(RUN.field)||RUN.field<=0)return '';
+  const r=RUN.metro/RUN.field;
+  const line=r>=1.2?`<div class="body rise" style="margin-top:14px">${bi('З Optimum блок доставлено у '+ratioText(r)+' швидше.','With Optimum the block arrived '+ratioText(r)+' faster.')}</div>`:'';
+  return `<div class="versus rise"><div><div class="lbl">${bi('Без Optimum','Without Optimum')}</div><div class="n">${fmt(RUN.metro)}</div></div>`+
+    `<div class="fast"><div class="lbl">${bi('З Optimum','With Optimum')}</div><div class="n">${fmt(RUN.field)}</div></div></div>${line}`;
 }
 
 let resultNick='';
@@ -3172,11 +3272,10 @@ function drawResultCard(nickname,lvl){
  // One oversized supplied silver silhouette, separated from the typography.
  drawContained(x,BLOB_CUTOUTS[0],980,240,530,410);
  text(d.label,80,628,24,'#bcedb9');
- x.fillStyle='#34453e';x.fillRect(80,676,1440,1);
- text('PLAYER',80,723,18,'#9aac9f');text('TOTAL TIME',1150,723,18,'#9aac9f');
+ text('PLAYER',80,723,18,'#9aac9f');text('WITHOUT OPTIMUM',700,723,18,'#9aac9f');text('WITH OPTIMUM',980,723,18,'#9aac9f');text('TOTAL',1260,723,18,'#9aac9f');
  const name=(nickname.trim()||'ANONYMOUS').slice(0,24);let size=55;
- while(size>22){x.font='600 '+size+'px Arial, sans-serif';if(x.measureText(name).width<940)break;size--;}
- text(name,80,791,size,'#f3f7ed','600');text(fmt(d.seconds),1150,791,60,'#f3f7ed','600');
+ while(size>22){x.font='600 '+size+'px Arial, sans-serif';if(x.measureText(name).width<580)break;size--;}
+ text(name,80,791,size,'#f3f7ed','600');text(fmt(RUN.metro),700,791,44,'#c9d3cc','400');text(fmt(RUN.field),980,791,44,'#bcedb9','600');text(fmt(d.seconds),1260,791,60,'#f3f7ed','600');
  text('SPEED IS MONEY',80,853,19,'#9aac9f');text('getoptimum.xyz',1320,853,19,'#9aac9f');
  return c;
 }
@@ -3190,8 +3289,71 @@ function mountResultCard(lvl){
  const save=document.createElement('button');save.className='pill primary';save.textContent=bi('Скачати картку PNG','Download PNG card');
  save.onclick=()=>{card.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='optimum-dead-relay-result.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);},'image/png');};actions.appendChild(save);
  const share=document.createElement('button');share.className='pill quiet';share.textContent=bi('Поділитися в X','Share on X');
- share.onclick=()=>{const r=resultDetails(lvl);if(!r.complete)return;const name=resultNick.trim()||'I';const text=name+' completed both worlds of Optimum: Dead Relay in '+fmt(r.seconds)+'.\n\nSpeed is money. @get_optimum';window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text),'_blank','noopener,noreferrer');};actions.appendChild(share);wrap.appendChild(actions);
+ share.onclick=()=>{const r=resultDetails(lvl);if(!r.complete)return;const name=resultNick.trim()||'I';const text=name+' completed both worlds of Optimum: Dead Relay in '+fmt(r.seconds)+'.\n\nWithout Optimum: '+fmt(RUN.metro)+'\nWith Optimum: '+fmt(RUN.field)+'\n\nSpeed is money. @get_optimum';window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(gameURL()),'_blank','noopener,noreferrer');};actions.appendChild(share);wrap.appendChild(actions);
  const note=document.createElement('p');note.className='note';note.textContent=bi('Спочатку скачай картку, потім прикріпи її до допису в X.','Download your card, then attach it to your post on X.');wrap.appendChild(note);UI.card.appendChild(wrap);
+}
+
+/* ---------------- leaderboard ---------------- */
+const LB_CONFIG={apiKey:"AIzaSyDIW_RyqS7gDaTNd2vDlpnqkfRn6V22jrs",authDomain:"poki-puzzle-leaderboard.firebaseapp.com",projectId:"poki-puzzle-leaderboard",storageBucket:"poki-puzzle-leaderboard.firebasestorage.app",messagingSenderId:"63494789491",appId:"1:63494789491:web:35b82fb9e3418424588d06"};
+const LB_COLLECTION='deadrelay_scores',LB_SDK='https://www.gstatic.com/firebasejs/10.12.2/';
+const LB={ready:null,sent:new Map()};
+function gameURL(){return /^https?:$/.test(location.protocol)?location.origin+location.pathname:'https://crpbase.github.io/optimum-dead-relay/';}
+function lbInit(){
+  if(!LB.ready)LB.ready=(async()=>{
+    const [app,fs]=await Promise.all([import(LB_SDK+'firebase-app.js'),import(LB_SDK+'firebase-firestore.js')]);
+    const inst=app.getApps().find(a=>a.name==='deadrelay')||app.initializeApp(LB_CONFIG,'deadrelay');
+    return {fs,db:fs.getFirestore(inst)};
+  })().catch(e=>{LB.ready=null;throw e;});
+  return LB.ready;
+}
+async function lbTop(){
+  const {fs,db}=await lbInit();
+  const snap=await fs.getDocs(fs.query(fs.collection(db,LB_COLLECTION),fs.orderBy('total','asc'),fs.limit(300)));
+  const best=new Map();
+  snap.forEach(doc=>{const v=doc.data();if(typeof v.nick!=='string'||!Number.isFinite(v.total))return;const k=v.nick.trim().toLowerCase();if(k&&!best.has(k))best.set(k,v);});
+  return [...best.values()];
+}
+function lbSubmit(){
+  const nick=resultNick.trim(),metro=Math.round(RUN.metro),field=Math.round(RUN.field);
+  if(!nick||!(metro>=60)||!(field>=8)||metro+field>=21600)return Promise.resolve(false);
+  const key=nick+'|'+RUN.metro+'|'+RUN.field;
+  if(!LB.sent.has(key))LB.sent.set(key,lbInit().then(({fs,db})=>fs.addDoc(fs.collection(db,LB_COLLECTION),{nick,metro,field,total:metro+field,lang:LANG,ts:fs.serverTimestamp()})).then(()=>true));
+  return LB.sent.get(key);
+}
+function renderLB(box,list,me){
+  box.replaceChildren();
+  const h=document.createElement('h3');h.textContent=bi('Лідерборд · найшвидші доставки','Leaderboard · fastest deliveries');box.appendChild(h);
+  if(!list.length){const p=document.createElement('p');p.className='note';p.textContent=bi('Поки що порожньо. Стань першим.','No runs yet. Be the first.');box.appendChild(p);return;}
+  const ol=document.createElement('ol'),mine=me?list.findIndex(v=>v.nick.trim().toLowerCase()===me.toLowerCase()):-1;
+  list.slice(0,10).forEach((v,i)=>{
+    const li=document.createElement('li');if(i===mine)li.className='me';
+    const r=document.createElement('span'),n=document.createElement('span'),t=document.createElement('span');
+    r.className='r';n.className='nm';t.className='t';r.textContent=String(i+1).padStart(2,'0');n.textContent=v.nick;t.textContent=fmt(v.total);
+    li.append(r,n,t);ol.appendChild(li);
+  });
+  box.appendChild(ol);
+  if(mine>=0){const p=document.createElement('p');p.className='note';p.textContent=bi('Твоє місце: #'+(mine+1)+' з '+list.length+' гравців','Your place: #'+(mine+1)+' of '+list.length+' players');box.appendChild(p);}
+}
+function lbFail(box,e){
+  console.warn('Leaderboard:',e);box.replaceChildren();
+  const p=document.createElement('p');p.className='note';p.textContent=bi('Лідерборд зараз недоступний.','The leaderboard is unavailable right now.');box.appendChild(p);
+}
+function mountLeaderboard(lvl){
+  if(!resultDetails(lvl).complete)return;
+  const box=document.createElement('section');box.className='lb';box.id='lbBox';
+  const p=document.createElement('p');p.className='note';p.textContent=bi('Записую результат у лідерборд...','Adding your run to the leaderboard...');box.appendChild(p);
+  UI.card.appendChild(box);
+  lbSubmit().catch(e=>console.warn('Leaderboard submit:',e)).then(()=>lbTop()).then(list=>{if(box.isConnected)renderLB(box,list,resultNick.trim());},e=>{if(box.isConnected)lbFail(box,e);});
+}
+function leaderboardScreen(){
+  redrawScreen=leaderboardScreen;
+  screen(`${eyebrow('OPTIMUM · DEAD RELAY')}<h2>${bi('Лідерборд','Leaderboard')}</h2>
+    <div class="body rise">${bi('Загальний час проходження обох світів. У таблиці найкращий результат кожного гравця.','Total time across both worlds. Each player appears once, with their best run.')}</div>
+    <section class="lb" id="lbBox"><p class="note">${bi('Завантаження...','Loading...')}</p></section>
+    <div class="cta rise"><button class="pill quiet" id="lbBack">${bi('Назад','Back')}</button></div>`,false);
+  document.getElementById('lbBack').onclick=()=>menu();
+  const box=document.getElementById('lbBox');
+  lbTop().then(list=>{if(box.isConnected)renderLB(box,list,resultNick.trim());},e=>{if(box.isConnected)lbFail(box,e);});
 }
 
 function fmt(s){const m=(s/60)|0,r=(s%60)|0;return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;}
@@ -3295,10 +3457,13 @@ function menu(){
       <button class="pill primary" id="s1">${T('mStart')}</button>
     </div>
     <div class="chips rise">
+      <button class="chip" id="lbt">${bi('ЛІДЕРБОРД','LEADERBOARD')}</button>
       <button class="chip" id="langt">${LANG==='en'?'УКР':'ENG'}</button>
+      ${soundControls()}
     </div>
 
   </div>`,false);
+  document.getElementById('lbt').onclick=()=>leaderboardScreen();
 
   document.getElementById('s1').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();CHECKPOINT=null;Game.start(0);};
 }
@@ -3439,11 +3604,23 @@ function showFrameError(error){
  const detail=document.createElement('pre');detail.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere';detail.textContent=String(error?.stack||error).slice(0,2200);report.appendChild(detail);
  const reset=document.createElement('button');reset.className='pill primary';reset.textContent=bi('Перезапустити','Restart');reset.onclick=()=>location.reload();report.appendChild(reset);document.body.appendChild(report);
 }
+function adaptResolution(raw){
+  if(Game.state!=='play'||raw>.25){ADAPT.t=0;return;}
+  ADAPT.ema+=(raw-ADAPT.ema)*.05;ADAPT.t+=raw;
+  if(ADAPT.t<2)return;
+  ADAPT.t=0;
+  const fps=1/ADAPT.ema;let next=ADAPT.scale;
+  if(fps<42&&ADAPT.scale>.7){next=Math.max(.7,ADAPT.scale-.15);ADAPT.calm=0;}
+  else if(fps>57){ADAPT.calm++;if(ADAPT.calm>=4&&ADAPT.scale<1){next=Math.min(1,ADAPT.scale+.1);ADAPT.calm=0;}}
+  else ADAPT.calm=0;
+  if(next!==ADAPT.scale){ADAPT.scale=next;renderer.setPixelRatio(Math.min(devicePixelRatio,QPX[QUAL])*next);resize();}
+}
 function tick(now){
   requestAnimationFrame(tick);
   if(frameFault)return;
   try{
-  const dt=Math.min(0.05,(now-prevT)/1000);prevT=now;
+  const raw=(now-prevT)/1000,dt=Math.min(0.05,raw);prevT=now;
+  adaptResolution(raw);
   Game.time+=dt;
   postMat.uniforms.uTime.value=Game.time;
 
@@ -3979,8 +4156,6 @@ function openExit(){
 
 /* ---------------- boot ---------------- */
 await loadBrandAssets();
-loadingStatus(bi('Завантаження скульптур...','Loading statues...'));
-await preloadTeamModels();
 loadingStatus(bi('Завантаження звуків...','Loading sounds...'));
 await Promise.race([Snd.prepare(),new Promise(r=>setTimeout(r,8000))]);
 ['pointerdown','touchstart','keydown','click'].forEach(ev=>addEventListener(ev,()=>Snd.unlock(),{capture:true,passive:true}));
@@ -3992,8 +4167,11 @@ document.getElementById('load').style.display='none';
 if(TOUCH)UI.warn.style.padding='0 20px';
 applyLang();
 coldOpen(menu);
+addEventListener('keydown',e=>{if(e.code==='KeyM'&&!e.repeat&&!(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)))toggleMute();});
 addEventListener('keydown',e=>{if(e.code==='Escape'){if(Game.state==='biography')closeTeamBio();else if(Game.state==='play')Game.pause();}});
 requestAnimationFrame(tick);
+// Statues are only needed in the Optimum world: fetch them while the first world is being played.
+setTimeout(()=>{preloadTeamModels({background:true}).catch(()=>{});},600);
 
 })().catch(err=>{console.error(err);const el=document.getElementById('load');if(el){el.style.display='flex';el.innerHTML='<div style="max-width:500px;padding:28px;line-height:1.6">Не вдалося запустити 3D. Відкрий файл у браузері з підтримкою WebGL та доступом до інтернету.<br><button onclick="location.reload()" style="padding:12px;margin-top:18px">Спробувати знову</button></div>';}});
 </script>
