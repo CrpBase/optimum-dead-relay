@@ -298,15 +298,16 @@
   body.plain-render.metro #vig{display:block}
   #inv{position:absolute;right:22px;bottom:22px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
   body.touch #inv{top:128px;bottom:auto;right:12px}
+  body.touch #hideAction{bottom:auto;top:44%;padding:18px 26px;font-size:17px;font-weight:bold;border:2px solid #39d892;border-radius:10px;background:#062a1cf2;color:#d9ffe9;touch-action:none}
   .chip2{font:12px var(--mono);letter-spacing:.06em;padding:7px 11px;background:#090e12cc;border:1px solid #a0b3bb55;border-radius:4px;color:#dfe9e4}
-  .chip2.k-card{border-color:#51B1FE99}.chip2.k-fuse{border-color:#FEA15899}.chip2.k-decoy{border-color:#ff7a6699}.chip2.k-code{border-color:#fff2a899}
+  .chip2.k-card{border-color:#51B1FE99}.chip2.k-fuse{border-color:#FEA15899}.chip2.k-code{border-color:#fff2a899}
   #vis{position:absolute;left:24px;bottom:75px;font:11px var(--mono);letter-spacing:.12em}
   #vis.dark{color:#7f9c8a}#vis.seen{color:#ffb08a}#vis.safe{color:#64E27F}
   #itemCard{position:absolute;left:50%;bottom:96px;transform:translate(-50%,12px);display:flex;gap:14px;align-items:center;padding:14px 18px;background:#0a1014ee;border:1px solid #a0b3bb44;border-radius:8px;opacity:0;transition:opacity .25s,transform .25s;width:max-content;max-width:min(540px,92vw)}
   #itemCard.on{opacity:1;transform:translate(-50%,0)}
   #itemCard .ic{width:44px;height:44px;border-radius:8px;flex-shrink:0;background:#51B1FE}
   .ic.i-frag{background:radial-gradient(circle at 50% 45%,#d8efff,#51B1FE 45%,#0c2a44)!important}.ic.i-card{background:linear-gradient(135deg,#2a6fb0,#51B1FE)!important}
-  .ic.i-fuse{background:linear-gradient(90deg,#d2a11c 0 18%,#eee 18% 82%,#d2a11c 82%)!important}.ic.i-decoy{background:radial-gradient(circle,#ff4a36 0 18%,#2c3033 20%)!important}.ic.i-node{background:radial-gradient(circle,#b4ffbd,#1f7a4a)!important}
+  .ic.i-fuse{background:linear-gradient(90deg,#d2a11c 0 18%,#eee 18% 82%,#d2a11c 82%)!important}.ic.i-node{background:radial-gradient(circle,#b4ffbd,#1f7a4a)!important}
   #itemCard .it{font:bold 16px var(--mono);color:#f2f6f4}#itemCard .is{font:13px var(--mono);color:#b9c7c1;margin-top:4px;line-height:1.4}
   #sectorCard{position:absolute;left:50%;top:24%;transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .8s;width:min(760px,92vw)}
   #sectorCard.on{opacity:1}
@@ -319,7 +320,6 @@
   .kpk{display:grid;grid-template-columns:repeat(3,72px);gap:8px}.kpk .pill{padding:0;min-height:56px;font-size:22px}
   .tasks{margin-top:18px;display:grid;gap:8px;font-size:14px}.tasks>div{display:flex;gap:10px;color:#cfdad4;line-height:1.45}.tasks>div.done{color:#7fae8c}.tasks span:first-child{font-family:var(--mono);color:#b2b99a}
   #interact{border-radius:4px;border-color:#b4ffbd66;color:#e9fff0;letter-spacing:.04em}
-  #bdecoy{right:188px;bottom:34px}
   @media(max-width:700px){#vis{left:14px;bottom:120px}#itemCard{bottom:150px}#sectorCard .ss{font-size:14px}}
 </style>
 </head>
@@ -350,7 +350,7 @@
   <div id="stick"><div id="knob"></div></div>
   <div class="tbtn" id="brun">RUN</div>
   <div class="tbtn" id="blamp">LAMP</div>
-  <div class="tbtn" id="bpause">II</div><button class="tbtn" id="binteract">ДІЯ</button><button class="tbtn" id="bcharge">ЗАРЯД</button><button class="tbtn" id="bjournal">ЖУРНАЛ</button><button class="tbtn" id="bdecoy">ПРИМ</button>
+  <div class="tbtn" id="bpause">II</div><button class="tbtn" id="binteract">ДІЯ</button><button class="tbtn" id="bcharge">ЗАРЯД</button><button class="tbtn" id="bjournal">ЖУРНАЛ</button>
 </div>
 
 <button id="teamRead" type="button" aria-label="Read biography"></button><div id="hideSlats"></div><button id="hideAction" type="button"></button>
@@ -1137,7 +1137,10 @@ const Snd={
   },
   unlock(){
     if(!this.ctx)this.prepare();
-    if(this.ctx&&this.ctx.state!=='running')this.ctx.resume().catch(()=>{});
+    const c=this.ctx;if(!c)return;
+    if(c.state!=='running'){const p=c.resume();if(p&&p.catch)p.catch(()=>{});}
+    // phones only open the audio output after a sound is started inside a tap
+    if(!this.kicked){try{const s=c.createBufferSource();s.buffer=c.createBuffer(1,1,22050);s.connect(c.destination);s.start(0);this.kicked=true;}catch(e){}}
   },
   init(){this.unlock();},
   build(){
@@ -1184,7 +1187,7 @@ const Snd={
   death(){this.noise(1.4,'lowpass',420,.4,.8);this.tone(90,1.6,'sawtooth',.22,28);},
   door(){this.noise(1.1,'lowpass',260,.3,.9);this.tone(70,1.0,'sine',.16,45);},
   flick(){this.noise(.05,'highpass',3000,.08,.5);},
-  key(){this.noise(.025,'bandpass',1400+Math.random()*600,.022,1.2);},
+  key(){this.noise(.03,'bandpass',1400+Math.random()*600,TOUCH?.085:.03,1.2);},
   monsterCall(pos){
     if(!this.ok||!this.monsterBuffer||Game.state!=='play'||level.calm)return;
     const t=this.ctx.currentTime;if(t-this.lastMonster<9)return;this.lastMonster=t;
@@ -3500,22 +3503,18 @@ function pickupMesh(kind){
     const c=new THREE.Mesh(new THREE.BoxGeometry(.09,.006,.056),new THREE.MeshStandardMaterial({color:0x2a6fb0,roughness:.4,emissive:0x0e2c4a,emissiveIntensity:.6}));g.add(c);
     const st=new THREE.Mesh(new THREE.BoxGeometry(.03,.007,.056),M.pWhite);st.position.x=-.02;g.add(st);
     const cord=new THREE.Mesh(new THREE.TorusGeometry(.07,.006,5,14),M.pRed);cord.rotation.x=Math.PI/2;cord.position.set(.1,0,0);g.add(cord);
-  }else if(kind==='fuse'){
+  }else{
     const b=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.2,10),M.pWhite);b.rotation.z=Math.PI/2;g.add(b);
     for(const s of [-1,1]){const cap=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.04,10),M.pYellow);cap.rotation.z=Math.PI/2;cap.position.x=s*.09;g.add(cap);}
-  }else{
-    const b=new THREE.Mesh(new THREE.CylinderGeometry(.06,.07,.07,10),M.pDark);g.add(b);
-    const a=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.14,5),M.steel);a.position.set(.03,.1,0);g.add(a);
-    const l=new THREE.Mesh(new THREE.SphereGeometry(.018,8,6),new THREE.MeshBasicMaterial({color:0xff4a36}));l.position.y=.045;g.add(l);g.userData.led=l;
   }
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:M.glowT,color:kind==='card'?0x51B1FE:kind==='fuse'?0xFEA158:0xff7a66,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,depthWrite:false}));
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:M.glowT,color:kind==='card'?0x51B1FE:0xFEA158,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,depthWrite:false}));
   sp.scale.set(.5,.5,1);g.add(sp);
   return g;
 }
 function pickupAt(kind,pos,sector,id){
   const g=pickupMesh(kind);g.position.copy(pos);world.add(g);
-  const names={card:[bi('Картка доступу','Access card')],fuse:[bi('Запобіжник 380 В','380 V fuse')],decoy:[bi('Маячок-приманка','Decoy beacon')]};
-  return addItem({type:kind,sector,id,g,aim:pos.clone().add(new THREE.Vector3(0,.06,0)),color:kind==='card'?0x9fd4ff:kind==='fuse'?0xffd9a8:0xffb0a4,taken:false,
+  const names={card:[bi('Картка доступу','Access card')],fuse:[bi('Запобіжник 380 В','380 V fuse')]};
+  return addItem({type:kind,sector,id,g,aim:pos.clone().add(new THREE.Vector3(0,.06,0)),color:kind==='card'?0x9fd4ff:0xffd9a8,taken:false,
     active(){return !this.taken;},label:()=>bi('Забрати: ','Take: ')+names[kind][0]});
 }
 
@@ -3524,8 +3523,8 @@ function buildStation(coded){
   buildStationMaterials();buildAtlas();buildPosters();
   const NC=METRO.w*METRO.h;
   QUEST={floor:new Uint8Array(NC),cls:new Uint8Array(NC),roomOf:new Int16Array(NC).fill(-1),rooms:[],items:[],gates:[],stage:0,found:[],visited:new Set(),current:null,charge:0,
-    inv:{card:false,fuse:false,decoys:1},groups:{B:false},powerT:-99,cabinet:false,code:[1+((Math.random()*9)|0),(Math.random()*10)|0,(Math.random()*10)|0],
-    digits:[false,false,false],lures:[],patrol:[[],[],[]],seenSector:new Set(),relays:[],taken:[],cab:null,board:null,lit:0,litClock:0};
+    inv:{card:false,fuse:false},groups:{B:false},powerT:-99,cabinet:false,code:[1+((Math.random()*9)|0),(Math.random()*10)|0,(Math.random()*10)|0],
+    digits:[false,false,false],patrol:[[],[],[]],seenSector:new Set(),relays:[],taken:[],cab:null,board:null,lit:0,litClock:0};
   if(!M.poolB){M.poolB=M.pool.warm.clone();M.poolB.userData=Object.assign({},M.pool.warm.userData);}
   M.poolB.visible=false;
   const ci=x=>Math.round((x+26)/2),cj=z=>Math.round((z+24)/2);
@@ -3650,7 +3649,6 @@ function dressRoom(room){
   ROOMS[room.id](c);
   if(c.card)pickupAt('card',c.card,s,'card');
   if(c.fuse)pickupAt('fuse',c.fuse,s,'fuse');
-  if(c.decoy)pickupAt('decoy',c.decoy,s,'decoy'+s);
   if(c.clue)clueAt(...c.clue);
 }
 function nodeRoom(c,letter){
@@ -3712,7 +3710,6 @@ const ROOMS={
     const {g,W,h,F,B,L,R}=c;
     g.b(M.wood,3.4,1.0,.6,10.6,0,2.9);g.b(M.woodDark,3.5,.05,.7,10.6,1.0,2.9);g.col(3.4,.6,10.6,2.9,0,1.05);
     g.d('tag',10.0,1.055,2.9,'u',.16,.09,false,.3);
-    c.decoy=g.p(11.2,2.9,1.09);
     for(const v of [4.2,5.9])PR.shelf(g.at(3.15,v,3),1.6,2.2,'bags');
     for(const v of [4.6,6.3])PR.shelf(g.at(10.1,v,1),1.6,2.2,'bags');
     PR.shelf(L(3.0),1.8,2.2,'bags');PR.shelf(L(5.4),1.8,2.2,'boxes');PR.shelf(R(5.4),1.8,2.2,'bags');
@@ -3832,7 +3829,6 @@ const ROOMS={
     PR.shelf(L(3.2),1.8,2.3,'cables');PR.shelf(L(5.6),1.8,2.3,'cables');PR.shelf(R(3.4),1.8,2.3,'cables');PR.shelf(R(5.9),1.8,2.3,'boxes');
     PR.pallet(F(11.2),'boxes');PR.pallet(g.at(8.4,5.6,0),'boxes');
     c.frag(8.4,6.1,.96);
-    c.decoy=g.p(11.2,.6,.99);
     PR.crate(F(2.2),.8,true);PR.crate(F(1.2),.6);
     PR.shelf(B(7.0),2.0,2.0,'cables');
     g.c(M.rub,.04,5,6,.045,2.6,'x',6);g.c(M.pOrange,.03,4,9,.035,7.4,'x',6);
@@ -3879,7 +3875,6 @@ const ROOMS={
     PR.pallet(F(12.6),'boxes');
     hideAt(R(2.5));
     PR.crate(g.at(3.5,5.0,0),.8,true);c.frag(3.5,5.4,.65);
-    c.decoy=g.p(10.3,.5,.59);
     PR.barrel(B(3.5),M.pGray);PR.barrel(B(4.3),M.pBlue);PR.pallet(B(10.0),'sacks');
     lampTube(g,5,h,6.0,'x','cool',0,{i:1.2,r:9,rods:.5});lampTube(g,10.6,h,3.4,'x','cool',2,{rods:.5});
     c.patrol(9.2,7.5);c.litter(2);
@@ -4149,8 +4144,6 @@ Object.assign(Snd,{
   alarm(){for(let i=0;i<6;i++)setTimeout(()=>this.tone(i%2?880:660,.2,'sawtooth',.11),i*210);},
   thunk(v){this.noise(.22,'lowpass',180,v||.3,.9);this.tone(62,.25,'sine',(v||.3)*.6,40);},
   powerUp(){this.thunk(.5);for(let i=0;i<9;i++)setTimeout(()=>this.thunk(.16),350+i*210);this.tone(50,3.2,'sawtooth',.035,100);},
-  decoyBeep(v){this.tone(1980,.09,'square',v);},
-  bang(){this.noise(.3,'lowpass',240,.5,.7);this.tone(70,.3,'sine',.3,38);},
   // hiss of escaping steam and mains hum, mixed by where the courier stands
   amb(steam,hum){
     if(!this.ok)return;
@@ -4193,7 +4186,6 @@ function drawInventory(){
   const q=QUEST,parts=[];
   if(q.inv.card&&!q.cabinet)parts.push(`<span class="chip2 k-card">${bi('Картка доступу','Access card')}</span>`);
   if(q.inv.fuse)parts.push(`<span class="chip2 k-fuse">${bi('Запобіжник','Fuse')}</span>`);
-  if(q.inv.decoys>0)parts.push(`<span class="chip2 k-decoy">${bi('Приманка','Decoy')} ×${q.inv.decoys} · G</span>`);
   if(q.stage===2&&q.digits.some(Boolean))parts.push(`<span class="chip2 k-code">${bi('Код','Code')} ${q.digits.map((d,i)=>d?q.code[i]:'·').join(' ')}</span>`);
   const html=parts.join('');
   if(el.dataset.h!==html){el.innerHTML=html;el.dataset.h=html;}
@@ -4230,8 +4222,10 @@ function deliver(a){
 }
 function questInteract(){
   const team=nearTeam();if(team){openTeamBio(team.kind);return;}
-  if(Game.state==='play'&&(HIDE.active||nearHide())){toggleHide();return;}
-  if(!QUEST||HIDE.active||Game.state!=='play'||!QUEST.current)return;
+  if(Game.state!=='play')return;
+  if(HIDE.active){toggleHide();return;}
+  // an item under the crosshair comes first; with nothing to use, the same key takes the nearest shelter
+  if(!QUEST||!QUEST.current){if(nearHide())toggleHide();return;}
   const a=QUEST.current,q=QUEST;
   if(a.type==='shard'){
     const sh=a.ref;sh.got=true;sh.picking=.38;sh.from=sh.g.position.clone();if(sh.marker)sh.marker.visible=false;
@@ -4241,11 +4235,10 @@ function questInteract(){
     if(n===7)toast(bi('Блок повний. Неси його до вузла ','The block is complete. Carry it to node ')+'ABC'[sh.sector]+'.');
   }else if(a.type==='note'){
     a.read=true;if(!q.found.includes(a.sector))q.found.push(a.sector);openJournal();
-  }else if(a.type==='card'||a.type==='fuse'||a.type==='decoy'){
+  }else if(a.type==='card'||a.type==='fuse'){
     a.taken=true;a.g.visible=false;a.marker.visible=false;q.taken.push(a.id);Snd.pickup();
     if(a.type==='card'){q.inv.card=true;itemCard('card',bi('Картка доступу','Access card'),bi('Відчиняє шафу доказів у кімнаті охорони (A02).','Opens the evidence cabinet in Security (A02).'));}
-    else if(a.type==='fuse'){q.inv.fuse=true;itemCard('fuse',bi('Запобіжник 380 В','380 V fuse'),bi('Встав у головний щит в Електрощитовій (B02).','Fit it into the main board in Switchgear (B02).'));}
-    else{q.inv.decoys++;itemCard('decoy',bi('Маячок-приманка','Decoy beacon'),bi('G - кинути. Писк відволікає Ехо на кілька секунд.','G to throw. Its beeping draws Echo away for a few seconds.'));}
+    else{q.inv.fuse=true;itemCard('fuse',bi('Запобіжник 380 В','380 V fuse'),bi('Встав у головний щит в Електрощитовій (B02).','Fit it into the main board in Switchgear (B02).'));}
   }else if(a.type==='cabinet'){
     if(!q.inv.card){Snd.deny();caption(bi('ШАФА ДОКАЗІВ','EVIDENCE CABINET'),bi('Зачинено. Фрагмент видно крізь скло. Потрібна картка доступу, чергова зміна тримала її в кімнаті персоналу (A05).','Locked. The fragment is visible through the glass. You need the access card; the shift kept it in the staff room (A05).'));return;}
     Snd.swipe();openCabinet();toast(bi('Шафу відчинено.','Cabinet open.'));
@@ -4306,41 +4299,6 @@ addEventListener('keydown',e=>{
   else if(e.code==='Enter'||e.code==='NumpadEnter')keypadPress('ok');
   else if(e.code==='Escape')closeKeypad();
 });
-/* ---- decoy beacon ---- */
-function throwDecoy(){
-  if(!QUEST||Game.state!=='play'||HIDE.active)return;
-  if(QUEST.inv.decoys<=0){toast(bi('Приманок немає.','No decoys left.'));return;}
-  const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);let x=P.pos.x,z=P.pos.z;
-  for(let d=.4;d<=7.5;d+=.3){const nx=P.pos.x+fx*d,nz=P.pos.z+fz*d;if(blocked(nx,nz,.22,0))break;x=nx;z=nz;}
-  QUEST.inv.decoys--;
-  const g=pickupMesh('decoy');g.position.set(P.pos.x,1.3,P.pos.z);world.add(g);
-  QUEST.lures.push({g,from:g.position.clone(),to:new THREE.Vector3(x,.05,z),pos:new THREE.Vector3(x,0,z),t:0,fly:0,life:10,beep:0,smash:0,sector:clamp(Math.floor((x+26)/92),0,2)});
-  Snd.noise(.2,'bandpass',900,.1,1);drawInventory();
-}
-function updateLures(dt){
-  for(const l of QUEST.lures){
-    if(l.fly<1){
-      l.fly=Math.min(1,l.fly+dt/.55);
-      l.g.position.lerpVectors(l.from,l.to,l.fly);l.g.position.y+=Math.sin(Math.PI*l.fly)*.9;
-      if(l.fly===1)Snd.noise(.12,'bandpass',600,.14,1.5);
-      continue;
-    }
-    l.t+=dt;l.beep-=dt;
-    if(l.beep<=0){
-      l.beep=.5;const d=l.pos.distanceTo(P.pos);Snd.decoyBeep(clamp(.09-d*.004,.012,.09));
-      if(l.g.userData.led)l.g.userData.led.material.color.setHex(0xffffff);
-    }else if(l.beep<.38&&l.g.userData.led)l.g.userData.led.material.color.setHex(0xff4a36);
-    for(const e of ECHOES)if(e.g.position.distanceTo(l.pos)<2.1){l.smash+=dt;if(l.smash>1.4)l.t=l.life;}
-    if(l.t>=l.life){world.remove(l.g);l.dead=true;Snd.noise(.25,'lowpass',300,.2,.8);}
-  }
-  if(QUEST.lures.some(l=>l.dead))QUEST.lures=QUEST.lures.filter(l=>!l.dead);
-}
-function lureFor(e){
-  if(!QUEST)return null;
-  for(const l of QUEST.lures)if(l.fly>=1&&l.sector===e.homeSector&&e.g.position.distanceTo(l.pos)<36)return l;
-  return null;
-}
-addEventListener('keydown',e=>{if(!e.repeat&&e.code==='KeyG')throwDecoy();});
 /* ---- journal ---- */
 function openJournal(){
   if(!QUEST||Game.state!=='play')return;
@@ -4370,7 +4328,7 @@ function openJournalScreen(){
     const got=SHARDS.find(a=>a.room===r).got,seen=known||QUEST.visited.has(r.id);
     return `<div><span>${got?'✓':'○'} ${r.id}</span> <span>${seen?labelPair(r.name):bi('Невідома кімната','Unexplored room')}</span><span>${got?bi('ЗІБРАНО','FOUND'):''}</span></div>`;
   }).join('')}</div>
-  <div class="note">${bi('Зелена шафа з лампою - укриття. Під увімкненими лампами Ехо бачить тебе здалеку, у тіні з вимкненим ліхтарем майже не бачить. G - кинути приманку. R - тримай для підзарядки; генератор шумить.','A green locker with a lamp is a shelter. Under working lamps Echo sees you from afar; in the dark with the torch off it barely does. G throws a decoy. Hold R to recharge; the generator is noisy.')}</div>
+  <div class="note">${bi('Зелена шафа з лампою - укриття, у ній Ехо тебе не дістане. Під увімкненими лампами Ехо бачить тебе здалеку, у тіні з вимкненим ліхтарем майже не бачить. R - тримай для підзарядки; генератор шумить.','A green locker with a lamp is a shelter; Echo cannot reach you inside. Under working lamps Echo sees you from afar; in the dark with the torch off it barely does. Hold R to recharge; the generator is noisy.')}</div>
   <div class="cta"><button class="pill primary" id="closeJournal">${bi('Повернутись','Return')} · ${count}/7</button></div>`,true);
   document.getElementById('closeJournal').onclick=()=>{Game.state='play';hideScreen();lockPointer();};
 }
@@ -4444,9 +4402,8 @@ function updateQuest(dt,wants){
     const ang=Math.atan2(dx*rx+dz*rz,dx*fx+dz*fz);
     mark.style.left=(50+clamp(ang/(Math.PI/2),-1,1)*46).toFixed(1)+'%';mark.style.opacity=Math.abs(ang)>Math.PI/2?'.4':'1';mark.classList.add('ready');
     cd.textContent=bi('УКРИТТЯ ','SHELTER ')+Math.round(bd)+bi(' м',' m');cd.style.color='#64E27F';
-  }else{mark.style.opacity='0';cd.style.color='';cd.textContent=bi('J · ЖУРНАЛ / R · ЗАРЯД / G · ПРИМАНКА','J · JOURNAL / R · CHARGE / G · DECOY');}
+  }else{mark.style.opacity='0';cd.style.color='';cd.textContent=TOUCH?'':bi('J · ЖУРНАЛ / R · ЗАРЯД','J · JOURNAL / R · CHARGE');}
   for(const h of HIDE.spots)h.beacon.material.opacity=hunted?.35+.25*Math.sin(Game.time*5):0;
-  updateLures(dt);
   /* ambience */
   let steam=0;for(const sp of q.steam){const d=sp.distanceTo(P.pos);if(d<14)steam=Math.max(steam,(1-d/14)*(1-d/14)*.05);}
   Snd.amb(steam,s===1?(q.groups.B?.016:0):s===2?.008:.004);
@@ -4496,11 +4453,10 @@ function resumeCheckpoint(){
 /* ---- texts that describe the new rules ---- */
 Object.assign(STR.ua,{
   dRow1:'Echo бачить ліхтар і бачить тебе під лампами, чує біг і генератор. У тіні з вимкненим світлом воно майже сліпе.',
-  dRow2:'Зелена шафа з лампою - укриття. Приманка (G) відводить Echo. Останній вузол, якому ти передав дані, зберігає прогрес.'});
+  dRow2:'Зелена шафа з лампою - укриття, у ній Echo тебе не дістане. Останній вузол, якому ти передав дані, зберігає прогрес.'});
 Object.assign(STR.en,{
   dRow1:'Echo sees the torch and sees you under lamps; it hears running and the generator. In the dark with the light off it is nearly blind.',
-  dRow2:'A green locker with a lamp is a shelter. A decoy (G) draws Echo away. The last node you delivered to keeps your progress.'});
-STR.ua.keysTouch.push('ПРИМ: приманка');STR.en.keysTouch.push('DECOY: lure');
+  dRow2:'A green locker with a lamp is a shelter; Echo cannot reach you inside. The last node you delivered to keeps your progress.'});
 DELIVERY_NOTES.ua=[
   'Журнал зміни, сектор A. Сім частин блока розкидані по кімнатах платформи. Одну охорона замкнула в шафі доказів, а картка доступу лишилась у кімнаті персоналу. Збери все й передай через термінал біля дальніх дверей.',
   'Журнал зміни, сектор B. Живлення вимкнули вручну, щоб лампи не приваблювали Echo. Запасний запобіжник лежить у Майстерні, головний щит стоїть в Електрощитовій. Без струму вузол B не прийме дані. Зі світлом тебе видно здалеку.',
@@ -4509,8 +4465,8 @@ DELIVERY_NOTES.en=[
   'Shift log, sector A. Seven pieces of the block are scattered through the platform rooms. Security locked one in the evidence cabinet, and the access card stayed in the staff room. Collect them all and deliver through the terminal by the far doors.',
   'Shift log, sector B. The power was cut by hand so the lamps would stop drawing Echo. A spare fuse lies in the Workshop, the main board stands in Switchgear. Without power node B will not take the data. With the lights on you can be seen from afar.',
   'Shift log, sector C. Node C was locked with a three digit code. The first digit is on the board in the Repair bay, the second on a note in the Radio room, the third on a rack label in the Server room. A wrong code sets off the siren. Beyond the exit the same job works differently: Optimum rebuilds data from coded pieces.'];
-STR.ua.bfR1b='Ліхтар, увімкнені лампи й шум видають тебе. Ховайся в зелених шафах-укриттях, кидай приманку (G) і тримайся тіні.';
-STR.en.bfR1b='Your torch, working lamps and noise reveal you. Hide in the green shelter lockers, throw a decoy (G) and keep to the dark.';
+STR.ua.bfR1b='Ліхтар, увімкнені лампи й шум видають тебе. Ховайся в зелених шафах-укриттях і тримайся тіні.';
+STR.en.bfR1b='Your torch, working lamps and noise reveal you. Hide in the green shelter lockers and keep to the dark.';
 
 function fragmentApproach(target){
   // A pickup may sit next to furniture: route to an unobstructed interaction position.
@@ -5183,7 +5139,7 @@ const stickEl=document.getElementById('stick'),knobEl=document.getElementById('k
 const touchEl=document.getElementById('touch');
 let moveId=null,lookId=null,lookX=0,lookY=0,stickX=0,stickY=0;
 const RADIUS=52;
-function isBtn(t){return t.target&&t.target.closest&&t.target.closest('.tbtn, #teamRead');}
+function isBtn(t){return t.target&&t.target.closest&&t.target.closest('.tbtn, #teamRead, #hideAction');}
 function tStart(e){
   if(Game.state!=='play')return;
   for(const t of e.changedTouches){
@@ -5237,7 +5193,6 @@ hold('bpause',()=>{Game.pause();});
 hold('binteract',()=>questInteract());
 hold('bjournal',()=>openJournal());
 hold('bcharge',()=>{TIN.charge=true;},()=>{TIN.charge=false;});
-hold('bdecoy',()=>throwDecoy());
 if(TOUCH)document.body.classList.add('touch');
 addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);TIN.charge=false;if(Game.state==='play')Game.pause();});
 document.addEventListener('mousemove',e=>{
@@ -5310,7 +5265,7 @@ function coldOpen(after){
  document.getElementById('introSkip').style.display='none';
  box.innerHTML='<div class="crt-case"><div class="crt-screen"><p class="lbl">OPTIMUM OS / INCOMING CONNECTION</p><div id="crtLog" class="crt-log" tabindex="0" aria-label="'+bi('Повідомлення термінала','Terminal messages')+'"><p id="crtWelcome" class="l"></p><p id="crtQuestion" class="l"></p></div><div class="crt-controls"><form id="crtNameForm" class="crt-entry" hidden><input id="crtNick" type="text" maxlength="24" autocomplete="nickname" autocapitalize="off" spellcheck="false" aria-label="'+bi('Твій нік','Your nickname')+'" placeholder="'+bi('Твій нік','Your nickname')+'" required><button class="pill primary" type="submit">'+bi('Далі ↵','Next ↵')+'</button></form><button id="crtReply" class="pill primary" type="button">'+bi('Показати весь текст','Show full text')+'</button></div></div><div class="crt-foot">OPTIMUM PERSONAL COMPUTER <span>● POWER</span></div></div>';
  const log=document.getElementById('crtLog'),button=document.getElementById('crtReply'),form=document.getElementById('crtNameForm'),input=document.getElementById('crtNick');
- let state='greeting',active=null;
+ let state='off',active=null;
  const sound=()=>{Snd.init();Snd.ctx?.resume();};
  wrap.addEventListener('pointerdown',sound,{once:true});input.addEventListener('keydown',()=>{sound();Snd.key();});
  const follow=()=>{if(log.scrollTop+log.clientHeight>=log.scrollHeight-75)log.scrollTop=log.scrollHeight;};
@@ -5321,7 +5276,18 @@ function coldOpen(after){
  const askName=()=>write(document.getElementById('crtQuestion'),bi('Як можу до тебе звертатися?','What should I call you?'),()=>{
    state='name';button.hidden=true;form.hidden=false;input.value=resultNick;input.focus();
  });
- write(document.getElementById('crtWelcome'),bi('Привіт, ласкаво просимо в Optimum Dead Relay.','Hi, welcome to Optimum Dead Relay.'),askName);
+ // Browsers keep sound locked until the first tap, so the terminal is switched on by hand: every typed letter is heard.
+ const welcome=document.getElementById('crtWelcome');
+ welcome.textContent='> _';welcome.classList.add('typing');
+ button.textContent=bi('Увімкнути термінал ⏻','Power on the terminal ⏻');
+ const powerOn=()=>{
+   if(state!=='off')return;state='greeting';
+   button.textContent=bi('Показати весь текст','Show full text');
+   const begin=()=>{if(state!=='greeting'||active)return;write(welcome,bi('Привіт, ласкаво просимо в Optimum Dead Relay.','Hi, welcome to Optimum Dead Relay.'),askName);};
+   let started=false;const go=()=>{if(started)return;started=true;begin();};
+   const p=Snd.ctx&&Snd.ctx.state!=='running'?Snd.ctx.resume():null;
+   if(p&&p.then){p.then(go,go);setTimeout(go,450);}else go();
+ };
  form.onsubmit=event=>{
    event.preventDefault();if(state!=='name')return;
    const name=Array.from(input.value.replace(/[\u0000-\u001f\u007f<>]/g,'').trim()).slice(0,24).join('');
@@ -5335,6 +5301,7 @@ function coldOpen(after){
  };
  button.onclick=()=>{
   sound();
+  if(state==='off'){powerOn();return;}
   if(active){const current=active;active=null;clearTimeout(typeTimer);current.el.textContent=current.message;current.el.classList.remove('typing');follow();current.next();}
   else if(state==='ready'){state='finished';clearTimeout(typeTimer);wrap.classList.add('hide');after();}
  };
@@ -5379,7 +5346,7 @@ function applyLang(){
   document.getElementById('lblBat').textContent=T('lampCell');
   document.getElementById('brun').textContent=T('run');
   document.getElementById('blamp').textContent=T('lamp');
-  document.getElementById('binteract').textContent=bi('ДІЯ','USE');document.getElementById('bdecoy').textContent=bi('ПРИМ','DECOY');document.getElementById('bcharge').textContent=bi('ЗАРЯД','CHARGE');document.getElementById('bjournal').textContent=bi('ЖУРНАЛ','JOURNAL');
+  document.getElementById('binteract').textContent=bi('ДІЯ','USE');document.getElementById('bcharge').textContent=bi('ЗАРЯД','CHARGE');document.getElementById('bjournal').textContent=bi('ЖУРНАЛ','JOURNAL');
   if(TOUCH)UI.warn.textContent=T('warn');
   BOARDS.forEach(f=>{try{f();}catch(e){}});
   if(level){
@@ -5846,7 +5813,7 @@ function buildWorld(l){
   seen=level.map?new Uint8Array(level.map.W*level.map.H):null;
   miniEl.style.display='none';
   pips(level.total,level.coded);updatePips();
-  for(const id of ['location','interact','lampStatus','vis','inv','bdecoy','bcharge','bjournal','binteract'])document.getElementById(id).style.display=level.metro?'':'none';
+  for(const id of ['location','interact','lampStatus','vis','inv','bcharge','bjournal','binteract'])document.getElementById(id).style.display=level.metro?'':'none';
   if(level.meadow){
     scene.fog.color.setHex(0x99bcb4);scene.fog.density=0.0062;
     scene.background.setHex(0x99bcb4);
@@ -6012,15 +5979,23 @@ function updateAssist(dt){
 }
 
 
-STR.ua.keys.push('H сховатися / вийти','G приманка');STR.en.keys.push('H hide / leave','G decoy');
+STR.ua.keys.push('H сховатися / вийти');STR.en.keys.push('H hide / leave');
 const HIDE={spots:[],active:null,witnesses:new Set(),lamp:true,returnPos:null,scares:new Set()};
 function buildHides(){}
 function nearHide(){
  if(!QUEST)return null;
- return HIDE.spots.find(h=>P.pos.distanceTo(h.out)<1.9&&echoSegmentFree(P.pos,h.out))||null;
+ let best=null,bd=1e9;
+ for(const h of HIDE.spots){
+  // already standing inside the locker
+  if(Math.hypot(P.pos.x-h.pos.x,P.pos.z-h.pos.z)<.8)return h;
+  const d=Math.hypot(P.pos.x-h.out.x,P.pos.z-h.out.z);
+  if(d<2.1&&d<bd&&sight(new THREE.Vector3(P.pos.x,1.2,P.pos.z),new THREE.Vector3(h.out.x,1.2,h.out.z))){bd=d;best=h;}
+ }
+ return best;
 }
 function setHideDoor(spot,shut){
  const d=shut?spot.shut:spot.open;spot.door.position.x=d.x;spot.door.position.z=d.z;spot.door.rotation.y=d.ry;
+ spot.door.visible=!shut;
 }
 function toggleHide(){
  if(Game.state!=='play'||!QUEST)return;
@@ -6034,22 +6009,20 @@ function toggleHide(){
  HIDE.witnesses.clear();
  HIDE.active=spot;setHideDoor(spot,true);
  HIDE.lamp=P.lampOn;P.lampOn=false;P.eye=1.5;P.pos.copy(spot.pos);P.yaw=spot.yaw;P.pitch=0;P.noise=0;
- let watched=false;
+ // a closed shelter always breaks the chase: the Echo loses you and goes searching
  ECHOES.forEach(e=>{
   if(e.state!=='hunt')return;
-  // an Echo that watched the door close does not forget where you went
-  if(e.g.position.distanceTo(spot.out)<9&&los(e.g.position,spot.out)){HIDE.witnesses.add(e);e.dragT=0;watched=true;return;}
-  e.state='search';e.searchT=10;e.lastSeen.copy(spot.out);e.searchTarget=chooseEchoSearch(e);e.searchMove=3;e.path=null;e.repath=0;
+  e.state='search';e.searchT=10;e.lastSeen.copy(spot.out);e.searchTarget=chooseEchoSearch(e);e.searchMove=3;e.path=null;e.repath=0;e.lunge=0;
  });
  document.getElementById('hideSlats').style.display='block';Snd.noise(.35,'lowpass',260,.13);
- toast(watched?bi('Ехо бачило, куди ти зайшов. Виходь і тікай!','Echo saw you go in. Get out and run!'):bi('Ти сховався. Перечекай, поки Ехо відійде. E - вийти.','You are hidden. Wait for Echo to leave. E - exit.'));
+ toast(bi('Ти в укритті. Перечекай, поки Ехо відійде, і виходь.','You are in a shelter. Wait for Echo to leave, then step out.'));
 }
 function updateHiding(){
  document.getElementById('hideSlats').style.display=HIDE.active?'block':'none';
  const b=document.getElementById('hideAction');
  const near=nearHide();
  b.style.display=Game.state==='play'&&(near||HIDE.active)?'block':'none';
- b.textContent=HIDE.active?bi('E / H · ВИЙТИ З УКРИТТЯ','E / H · LEAVE SHELTER'):bi('E / H · СХОВАТИСЯ В УКРИТТІ','E / H · HIDE IN SHELTER');
+ b.textContent=TOUCH?(HIDE.active?bi('ВИЙТИ З УКРИТТЯ','LEAVE SHELTER'):bi('СХОВАТИСЯ','HIDE')):(HIDE.active?bi('E / H · ВИЙТИ З УКРИТТЯ','E / H · LEAVE SHELTER'):bi('E / H · СХОВАТИСЯ В УКРИТТІ','E / H · HIDE IN SHELTER'));
  if(HIDE.active){P.lampOn=false;P.noise=0;}
  if(QUEST){
   const sector=clamp(Math.floor((P.pos.x+26)/92),0,2),offset=P.pos.x-(-26+sector*92);
@@ -6060,6 +6033,7 @@ function updateHiding(){
  }
 }
 document.getElementById('hideAction').onclick=toggleHide;
+hold('hideAction',()=>toggleHide());
 
 function updatePlay(dt){
   updateHiding();
@@ -6351,18 +6325,15 @@ function chooseEchoSearch(e){
 function updateEcho(e,dt){
   const pos=e.g.position;
   const d=pos.distanceTo(P.pos);
-  const witness=HIDE.active&&HIDE.witnesses.has(e);
   const canSee=!HIDE.active&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8)||(d<9&&QUEST&&QUEST.lit>.38));
-  const lure=!canSee&&!witness?lureFor(e):null;
 
   if(canSee){
     if(e.state!=='hunt'){e.state='hunt';e.repath=0;Snd.monsterCall(pos);}
     const movement=new THREE.Vector3().subVectors(P.pos,e.lastSeen);movement.y=0;if(movement.length()>.03)e.lastHeading=movement.normalize();
     e.lastSeen.copy(P.pos);e.searchT=0;
-  }else if(e.state==='hunt'&&!witness){
+  }else if(e.state==='hunt'){
     e.state='search';e.searchT=10;e.searchTarget=chooseEchoSearch(e);e.searchMove=3;e.path=null;e.repath=0;
   }
-  if(lure){e.state='search';e.searchT=Math.max(e.searchT,3);e.searchTarget=lure.pos;e.searchMove=1;}
 
   if(e.state==='search'){
     e.searchT-=dt;e.searchMove=(e.searchMove||0)-dt;
@@ -6378,8 +6349,7 @@ function updateEcho(e,dt){
 
   // Patrols use reachable waypoints within their own sector.
   let target;
-  if(witness)target=HIDE.active.out;
-  else if(e.state==='hunt')target=P.pos;
+  if(e.state==='hunt')target=P.pos;
   else if(e.state==='search')target=e.searchTarget||e.lastSeen;
   else{
     if(!e.wander||Math.hypot(pos.x-e.wander.x,pos.z-e.wander.z)<1.0||e.stuckTime>1.2){
@@ -6406,14 +6376,6 @@ function updateEcho(e,dt){
   }
 
   if(e.state==='hunt'&&canSee&&d<8&&echoSegmentFree(pos,P.pos))dir.subVectors(P.pos,pos).setY(0).normalize();
-  if(witness){
-    const od=Math.hypot(pos.x-HIDE.active.out.x,pos.z-HIDE.active.out.z);
-    if(od<1.3){ // it reached the locker: it pounds on the door, then tears it open
-      dir.set(0,0,0);const before=e.dragT;e.dragT+=dt;e.lunge=Math.min(1,e.lunge+dt*2);
-      if(Math.floor(before/.42)!==Math.floor(e.dragT/.42)){Snd.bang();Game.damage=1;}
-      if(e.dragT>1.9){const spot=HIDE.active;setHideDoor(spot,false);HIDE.active=null;HIDE.witnesses.clear();P.eye=1.68;document.getElementById('hideSlats').style.display='none';Game.die(level.coded);return;}
-    }
-  }
   e.cool-=dt;
   if(e.state==='hunt'&&d<5.5&&e.cool<=0)e.lunge=Math.min(1,e.lunge+dt*1.2);
   else e.lunge=Math.max(0,e.lunge-dt*1.6);
@@ -6489,7 +6451,7 @@ await loadBrandAssets();
 try{await Promise.race([Promise.all([document.fonts.load('600 40px Geist','Optimum АБВ'),document.fonts.load('400 40px Geist','Optimum АБВ'),document.fonts.load('500 30px "Geist Mono"','07')]),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
 loadingStatus(bi('Завантаження звуків...','Loading sounds...'));
 await Promise.race([Snd.prepare(),new Promise(r=>setTimeout(r,8000))]);
-['pointerdown','touchstart','keydown','click'].forEach(ev=>addEventListener(ev,()=>Snd.unlock(),{capture:true,passive:true}));
+['pointerdown','pointerup','touchstart','touchend','mouseup','keydown','click'].forEach(ev=>addEventListener(ev,()=>Snd.unlock(),{capture:true,passive:true}));
 TS=QTEX[QUAL];
 buildMaterials();
 metroMaterials();
