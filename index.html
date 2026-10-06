@@ -3291,13 +3291,16 @@ function shadowCut(){
   x.putImageData(all,0,0);
   S.full=c;S.asp=W/H;S.img=null;
 }
+// The room and its vestibule are a refuge: an Echo cannot see into them or step through the door.
+// m widens the doorway test, so an Echo's body is stopped before it reaches the threshold.
+function shadowZone(x,z,m){m=m||0;return (x>56-m&&x<58+m&&z>4.2-m&&z<8.01)||(x>52&&x<60&&z>=8&&z<16);}
 function shadowDispose(){for(const t of SHADOW.tex)t.dispose();SHADOW.tex=[];}
 function shadowTex(canvas){
   const t=tex(canvas,1,1);t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;SHADOW.tex.push(t);return t;
 }
 function shadowLabel(w,h,paint){const c=cvs(w,h),x=c.getContext('2d');paint(x,w,h);return shadowTex(c);}
 function buildShadowRoom(){
-  const S=SHADOW;S.r=null;shadowDispose();shadowCut();
+  const S=SHADOW;S.r=null;S.told=false;shadowDispose();shadowCut();
   /* ---- the door in the corridor wall ---- */
   for(const x of [56.225,57.775])bbox(M.wallA,.45,3.0,.22,x,1.5,4,0,true);
   bbox(M.wallA,1.1,.9,.22,57,2.55,4,0,true);
@@ -3359,8 +3362,9 @@ function shadowDoor(){
 }
 const _sv=new THREE.Vector3(),_sf=new THREE.Vector3();
 function shadowTick(dt){
-  const r=SHADOW.r;if(!r)return;
-  const px=P.pos.x,pz=P.pos.z,S=SHADOW;
+  const S=SHADOW,px=P.pos.x,pz=P.pos.z;
+  if(!S.told&&shadowZone(px,pz)&&pz>8.4){S.told=true;toast(bi('Сюди Echo не заходить. Тут можна перечекати.','Echo does not come in here. You can wait it out.'));}
+  const r=S.r;if(!r)return;
   if(px<50||px>62||pz<2||pz>17){
     if(r.vis>0){r.vis=0;r.full.visible=false;for(const p of r.parts)p.m.visible=false;}
     return;
@@ -5008,7 +5012,7 @@ const Nav={
     for(let j=0;j<this.h;j++)for(let i=0;i<this.w;i++){
       const x=this.x0+i+.5,z=this.z0+j+.5;
       const f=groundAt(x,z),lo=f+0.35,hi=f+1.75;
-      let ok=QUEST&&!metroFloor(x,z)?0:1;
+      let ok=QUEST&&(!metroFloor(x,z)||shadowZone(x,z,.5))?0:1;   // Echoes have no route into the shadow room
       for(const c of CollisionIndex.query(x-pad,z-pad,x+pad,z+pad)){
         if(x>c.x0-pad&&x<c.x1+pad&&z>c.z0-pad&&z<c.z1+pad&&c.y1>lo&&c.y0<hi){ok=0;break;}
       }
@@ -6201,7 +6205,7 @@ function updatePlay(dt){
   let nearest=999;
   if(!level.calm)ECHOES.forEach(e=>{
     updateEcho(e,dt);
-    if(!HIDE.active&&los(e.g.position,P.pos))nearest=Math.min(nearest,e.g.position.distanceTo(P.pos));
+    if(!HIDE.active&&!(QUEST&&shadowZone(P.pos.x,P.pos.z))&&los(e.g.position,P.pos))nearest=Math.min(nearest,e.g.position.distanceTo(P.pos));
   });
   Game.dangerLvl=clamp(1-(nearest-1.5)/9,0,1);
   Game.damage=lerp(Game.damage,Game.dangerLvl,0.12);
@@ -6241,6 +6245,7 @@ function echoNavAnchor(p){
   list.sort((a,b)=>a.d-b.d);return list.find(a=>echoSegmentFree(p,a.v))?.v||null;
 }
 function echoRoute(from,to){
+  if(QUEST&&shadowZone(to.x,to.z,.5))return null;   // the shadow room is closed to Echoes; do not search the whole map for a way in
   const start=echoNavAnchor(from),end=echoNavAnchor(to);if(!start||!end)return null;
   const path=Nav.path(start,end);if(!path)return null;
   return [start,...path];
@@ -6308,7 +6313,7 @@ function chooseEchoSearch(e){
  for(const distance of [7,12,17])for(const side of [-5,5,0]){
   const point=new THREE.Vector3(last.x+heading.x*distance-heading.z*side,0,last.z+heading.z*distance+heading.x*side);
   if(QUEST&&clamp(Math.floor((point.x+26)/92),0,2)!==e.homeSector)continue;
-  if(blocked(point.x,point.z,.55,0))continue;
+  if(blocked(point.x,point.z,.55,0)||(QUEST&&shadowZone(point.x,point.z,.5)))continue;
   const path=echoRoute(e.g.position,point);if(!path)continue;
   const hidden=!los(point,P.pos);options.push({point,score:(hidden?12:0)-Math.abs(distance-10)-Math.random()*3});
  }
@@ -6319,7 +6324,7 @@ function chooseEchoSearch(e){
 function updateEcho(e,dt){
   const pos=e.g.position;
   const d=pos.distanceTo(P.pos);
-  const canSee=!HIDE.active&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8));
+  const canSee=!HIDE.active&&!(QUEST&&shadowZone(P.pos.x,P.pos.z))&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8));
 
   if(canSee){
     if(e.state!=='hunt'){e.state='hunt';e.repath=0;Snd.monsterCall(pos);}
@@ -6380,8 +6385,8 @@ function updateEcho(e,dt){
   if(e.cool>0)sp*=0.62;
   const oldX=pos.x,oldZ=pos.z;
   const nx=pos.x+dir.x*sp*dt, nz=pos.z+dir.z*sp*dt;
-  if(!blocked(nx,pos.z,0.42,groundAt(nx,pos.z)))pos.x=nx;
-  if(!blocked(pos.x,nz,0.42,groundAt(pos.x,nz)))pos.z=nz;
+  if(!blocked(nx,pos.z,0.42,groundAt(nx,pos.z))&&!(QUEST&&shadowZone(nx,pos.z,.5)))pos.x=nx;
+  if(!blocked(pos.x,nz,0.42,groundAt(pos.x,nz))&&!(QUEST&&shadowZone(pos.x,nz,.5)))pos.z=nz;
 
   if(Math.hypot(pos.x-oldX,pos.z-oldZ)<sp*dt*.1)e.stuckTime+=dt;else e.stuckTime=0;
   if(e.stuckTime>1.2){e.path=null;e.repath=0;if(e.state==='patrol')e.wander=null;}
