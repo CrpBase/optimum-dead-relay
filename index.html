@@ -295,31 +295,20 @@
   /* ---------- station HUD additions ---------- */
   #vig{position:fixed;inset:0;pointer-events:none;z-index:1;display:none;background:radial-gradient(ellipse at 50% 50%,transparent 46%,rgba(0,0,0,.6) 100%)}
   body.plain-render.metro #vig{display:block}
-  #inv{position:absolute;right:22px;bottom:22px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
-  body.touch #inv{top:128px;bottom:auto;right:12px}
   body.touch #hideAction{bottom:auto;top:44%;padding:18px 26px;font-size:17px;font-weight:bold;border:2px solid #39d892;border-radius:10px;background:#062a1cf2;color:#d9ffe9;touch-action:none}
-  .chip2{font:12px var(--mono);letter-spacing:.06em;padding:7px 11px;background:#090e12cc;border:1px solid #a0b3bb55;border-radius:4px;color:#dfe9e4}
-  .chip2.k-card{border-color:#51B1FE99}.chip2.k-fuse{border-color:#FEA15899}.chip2.k-code{border-color:#fff2a899}
-  #vis{position:absolute;left:24px;bottom:75px;font:11px var(--mono);letter-spacing:.12em}
-  #vis.dark{color:#7f9c8a}#vis.seen{color:#ffb08a}#vis.safe{color:#64E27F}
   #itemCard{position:absolute;left:50%;bottom:96px;transform:translate(-50%,12px);display:flex;gap:14px;align-items:center;padding:14px 18px;background:#0a1014ee;border:1px solid #a0b3bb44;border-radius:8px;opacity:0;transition:opacity .25s,transform .25s;width:max-content;max-width:min(540px,92vw)}
   #itemCard.on{opacity:1;transform:translate(-50%,0)}
   #itemCard .ic{width:44px;height:44px;border-radius:8px;flex-shrink:0;background:#51B1FE}
-  .ic.i-frag{background:radial-gradient(circle at 50% 45%,#d8efff,#51B1FE 45%,#0c2a44)!important}.ic.i-card{background:linear-gradient(135deg,#2a6fb0,#51B1FE)!important}
-  .ic.i-fuse{background:linear-gradient(90deg,#d2a11c 0 18%,#eee 18% 82%,#d2a11c 82%)!important}.ic.i-node{background:radial-gradient(circle,#b4ffbd,#1f7a4a)!important}
+  .ic.i-frag{background:radial-gradient(circle at 50% 45%,#d8efff,#51B1FE 45%,#0c2a44)!important}
+  .ic.i-node{background:radial-gradient(circle,#b4ffbd,#1f7a4a)!important}
   #itemCard .it{font:bold 16px var(--mono);color:#f2f6f4}#itemCard .is{font:13px var(--mono);color:#b9c7c1;margin-top:4px;line-height:1.4}
   #sectorCard{position:absolute;left:50%;top:24%;transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .8s;width:min(760px,92vw)}
   #sectorCard.on{opacity:1}
   #sectorCard .sl{font:12px var(--mono);letter-spacing:.4em;color:#9fb4a8}
   #sectorCard .sn{font:clamp(32px,6vw,60px) var(--mono);letter-spacing:.04em;margin-top:10px;color:#f1f5f2;text-shadow:0 2px 30px #000}
   #sectorCard .ss{font:16px var(--mono);color:#c9d6cf;margin-top:14px;line-height:1.5;text-shadow:0 1px 12px #000}
-  .kp{margin-top:22px;display:grid;gap:14px;justify-items:start}
-  .kpd{font:44px var(--mono);letter-spacing:.2em;padding:10px 22px;border:1px solid #4b925d;background:#05160b;color:#b4ffbd;min-width:190px;text-align:center}
-  .kpd.bad{color:#ff5b4a;border-color:#ff5b4a}
-  .kpk{display:grid;grid-template-columns:repeat(3,72px);gap:8px}.kpk .pill{padding:0;min-height:56px;font-size:22px}
-  .tasks{margin-top:18px;display:grid;gap:8px;font-size:14px}.tasks>div{display:flex;gap:10px;color:#cfdad4;line-height:1.45}.tasks>div.done{color:#7fae8c}.tasks span:first-child{font-family:var(--mono);color:#b2b99a}
   #interact{border-radius:4px;border-color:#b4ffbd66;color:#e9fff0;letter-spacing:.04em}
-  @media(max-width:700px){#vis{left:14px;bottom:120px}#itemCard{bottom:150px}#sectorCard .ss{font-size:14px}}
+  @media(max-width:700px){#itemCard{bottom:150px}#sectorCard .ss{font-size:14px}}
 </style>
 </head>
 <body>
@@ -340,7 +329,6 @@
   <div id="toast"><div class="t"></div></div>
   <div id="cap"><div class="who lbl"></div><div class="line"></div></div>
   <div id="danger"></div><div id="location"></div><div id="interact"></div><div id="lampStatus"></div>
-  <div id="vis"></div><div id="inv"></div>
   <div id="itemCard"><div class="ic"></div><div><div class="it"></div><div class="is"></div></div></div>
   <div id="sectorCard"><div class="sl"></div><div class="sn"></div><div class="ss"></div></div>
 </div>
@@ -1494,7 +1482,6 @@ addEventListener('resize',resize);
 const GRADES={
   A:{tint:[0.97,1.02,1.0],lift:[0.000,0.012,0.010],sat:.92,con:1.06,bloom:.55},
   B:{tint:[1.05,0.99,0.90],lift:[0.016,0.006,0.000],sat:.95,con:1.08,bloom:.62},
-  Bdark:{tint:[1.07,0.94,0.90],lift:[0.020,0.000,0.000],sat:.9,con:1.1,bloom:.7},
   C:{tint:[0.93,1.0,1.08],lift:[0.000,0.008,0.022],sat:.88,con:1.08,bloom:.6},
   meadow:{tint:[1.02,1.0,0.97],lift:[0.0,0.0,0.0],sat:1.06,con:1.03,bloom:.22,thresh:.9}
 };
@@ -2362,7 +2349,7 @@ function buildAtlas(){
     fitText(x,UA?'УБ’Є':'DANGER OF DEATH',w/2+44,140,700,UA?58:30,w-140,'#b3261e');
   });
   lit.add('staff',400,110,(x,w,h)=>{enamel(x,w,h,'#ebe6d6');fitText(x,UA?'СЛУЖБОВЕ ПРИМІЩЕННЯ':'STAFF ONLY',w/2,70,600,34,w-44,'#17181a');});
-  lit.add('quiet',400,110,(x,w,h)=>{enamel(x,w,h,'#ebe6d6');fitText(x,UA?'ВИМКНИ СВІТЛО. ВОНО БАЧИТЬ':'LIGHTS OFF. IT SEES THEM',w/2,70,600,30,w-40,'#17181a');});
+  lit.add('quiet',400,110,(x,w,h)=>{enamel(x,w,h,'#ebe6d6');fitText(x,UA?'ВИМКНИ ЛІХТАР. ВОНО БАЧИТЬ':'TORCH OFF. IT SEES IT',w/2,70,600,30,w-40,'#17181a');});
   /* ---- wall clutter ---- */
   lit.add('board',420,280,(x,w,h)=>{
     x.fillStyle='#5b4027';x.fillRect(0,0,w,h);x.fillStyle='#8a6a45';x.fillRect(12,12,w-24,h-24);
@@ -2469,8 +2456,6 @@ function buildAtlas(){
     if((r+c)%3===1){for(let i=0;i<1400;i++){const v=rc(30,200)|0;x.fillStyle=`rgb(${v},${v},${v})`;x.fillRect(px+Math.random()*184,py+Math.random()*132,2,1.4);}}
     else{x.fillStyle='rgba(120,170,170,.25)';x.beginPath();x.moveTo(px,py+134);x.lineTo(px+70,py+40);x.lineTo(px+116,py+40);x.lineTo(px+186,py+134);x.fill();x.fillStyle='rgba(180,220,220,.2)';x.fillRect(px+70,py+20,46,20);}
     x.font=MONO(400,13);x.fillStyle='#cfe8e4';x.fillText('CAM 0'+(r*3+c+1),px+8,py+18);}});
-  glow.add('keypad',150,200,(x,w,h)=>{x.fillStyle='#16191b';x.fillRect(0,0,w,h);x.fillStyle='#06281a';x.fillRect(14,12,w-28,40);x.font=MONO(400,26);x.fillStyle='#64e27f';x.fillText('_ _ _',38,42);
-    for(let i=0;i<12;i++){x.fillStyle='#3b4144';rrect(x,16+(i%3)*42,62+((i/3)|0)*34,34,27,4);x.fill();x.fillStyle='#e8eef2';x.font=FONT(600,18);x.fillText('123456789*0#'[i],27+(i%3)*42,82+((i/3)|0)*34);}});
   glow.add('led_g',40,40,(x,w,h)=>{const g=x.createRadialGradient(20,20,2,20,20,19);g.addColorStop(0,'#eafff0');g.addColorStop(.4,'#49ff8a');g.addColorStop(1,'#0c5a2c');x.fillStyle=g;x.beginPath();x.arc(20,20,19,0,7);x.fill();});
   glow.add('led_r',40,40,(x,w,h)=>{const g=x.createRadialGradient(20,20,2,20,20,19);g.addColorStop(0,'#fff0ea');g.addColorStop(.4,'#ff4a36');g.addColorStop(1,'#5a120c');x.fillStyle=g;x.beginPath();x.arc(20,20,19,0,7);x.fill();});
   glow.add('led_a',40,40,(x,w,h)=>{const g=x.createRadialGradient(20,20,2,20,20,19);g.addColorStop(0,'#fff6e0');g.addColorStop(.4,'#ffb02e');g.addColorStop(1,'#5a3a0c');x.fillStyle=g;x.beginPath();x.arc(20,20,19,0,7);x.fill();});
@@ -2515,18 +2500,12 @@ function glowMat(kind,k){
   return m;
 }
 function addFixture(o){
-  const f=Object.assign({i:1.3,r:9,mode:0,seed:Math.random()*20,group:null,level:1,mesh:null,on:true,delay:0,drop:.3},o);
+  const f=Object.assign({i:1.3,r:9,mode:0,seed:Math.random()*20,level:1,mesh:null,on:true,drop:.3},o);
   f.col=LAMPCOL[f.kind]||LAMPCOL.cool;f.hdr=LAMPHDR[f.kind]||LAMPHDR.cool;
   FIX.push(f);return f;
 }
 function fixtureLevel(f,t){
   if(!f.on)return 0;
-  if(f.group&&QUEST){
-    if(QUEST.groups[f.group]===false)return f.backup||0;
-    const since=t-QUEST.powerT-f.delay;        // tubes strike one after another when power returns
-    if(since<0)return f.backup||0;
-    if(since<.7)return Math.sin(since*52+f.seed)>.1?.9:.08;
-  }
   switch(f.mode){
     case 1:{const a=Math.sin(t*7.3+f.seed)*Math.sin(t*2.1+f.seed*2);return a>.55?.12+.3*Math.abs(Math.sin(t*40+f.seed)):1;}
     case 2:{const a=Math.sin(t*1.3+f.seed)*Math.sin(t*.37+f.seed*3);return a>.3?(Math.sin(t*31+f.seed)>0?.95:.08):.02;}
@@ -2576,20 +2555,6 @@ function updateFixtures(dt){
   }
 }
 function setPool(on){for(const s of POOL){s.l.visible=on;s.l.intensity=0;s.f=null;s.k=0;s.out=false;}fixClock=0;}
-// How much lamp light falls on a point: Echoes notice a courier who stands in it.
-function lightAt(p){
-  let sum=0;
-  for(const f of FIX){
-    if(f.level<=.05||!f.i||f.soft)continue;
-    const dx=f.x-p.x,dy=f.y-f.drop-(p.y+1.2),dz=f.z-p.z,d=Math.sqrt(dx*dx+dy*dy+dz*dz);
-    if(d>=f.r)continue;
-    const k=1-d/f.r,c=f.i*f.level*k*k;
-    if(c<.06)continue;
-    _fv.set(f.x,f.y-f.drop,f.z);
-    if(sight(new THREE.Vector3(p.x,p.y+1.2,p.z),_fv))sum+=c;
-  }
-  return sum;
-}
 
 /* ---------------- station materials ---------------- */
 // Painted in steps so the loading bar can move between textures.
@@ -2673,7 +2638,6 @@ function disposeStation(){
   STATION_TEX.length=0;
   const drop=m=>{if(!m)return;if(m.dispose)m.dispose();else if(typeof m==='object')Object.values(m).forEach(drop);};
   for(const k of M.stationKeys){drop(M[k]);delete M[k];}
-  if(M.poolB){M.poolB.dispose();delete M.poolB;}
   for(const p of POSTERS){p.paper.dispose();p.lit.dispose();}
   POSTERS.length=0;POSTER_LANG=null;
   for(const t of [ATLAS.litTex,ATLAS.glowTex])if(t){t.dispose();if(t.image&&t.image.getContext){t.image.width=1;t.image.height=1;}}
@@ -2685,7 +2649,7 @@ function buildStationMaterials(){for(const step of stationMaterialSteps());}
 /* ---------------- posters ----------------
    Large type, one idea per sheet, nothing decorative that is not part of the Optimum identity.
    Every poster exists as a paper print and as a back-lit lightbox. */
-const POSTERS=[];
+const POSTERS=[]; // 0..7 brand prints, 8 Echo notice, 9 shelter notice
 function tintImage(img,color){
   const c=cvs(img.width,img.height),x=c.getContext('2d');
   x.drawImage(img,0,0);x.globalCompositeOperation='source-in';x.fillStyle=color;x.fillRect(0,0,c.width,c.height);
@@ -2747,19 +2711,13 @@ function noticePosterCanvas(kind){
   const W=768,H=1024,c=cvs(W,H),x=c.getContext('2d'),UA=LANG==='ua';
   const data={
     dark:{bg:'#e9e3d0',ink:'#1b1c1d',hot:'#b3261e',head:UA?'ЕХО ЙДЕ НА СВІТЛО':'ECHO FOLLOWS LIGHT',
-      rows:UA?['Вимкни ліхтар, коли чуєш кроки','Тримайся тіні між лампами','Не біжи: біг чути здалеку']:['Switch the torch off when you hear steps','Stay in the dark between lamps','Do not run: running carries far'],draw(){
+      rows:UA?['Вимкни ліхтар, коли чуєш кроки','Зайди за кут, щоб воно тебе загубило','Не біжи: біг чути здалеку']:['Switch the torch off when you hear steps','Step round a corner to lose it','Do not run: running carries far'],draw(){
         x.fillStyle='#1b1c1d';x.beginPath();x.arc(W/2,330,150,0,7);x.fill();
         x.fillStyle='#e9e3d0';x.beginPath();x.moveTo(W/2-150,330);x.quadraticCurveTo(W/2,210,W/2+150,330);x.quadraticCurveTo(W/2,450,W/2-150,330);x.fill();
         x.fillStyle='#b3261e';x.beginPath();x.arc(W/2,330,52,0,7);x.fill();x.fillStyle='#1b1c1d';x.beginPath();x.arc(W/2,330,22,0,7);x.fill();}},
     hide:{bg:'#103b2a',ink:'#eafff4',hot:'#39d892',head:UA?'ЗЕЛЕНА ШАФА: УКРИТТЯ':'GREEN LOCKER MEANS SHELTER',
-      rows:UA?['Зайди й натисни E або H','Чекай, доки кроки стихнуть','Якщо Ехо бачило вхід, воно відчинить']:['Step in and press E or H','Wait until the steps fade','If Echo saw you enter, it will open it'],draw(){
-        rrect(x,W/2-150,170,300,330,26);x.fillStyle='#39d892';x.fill();crouch(x,W/2,350,250,'#062216');}},
-    code:{bg:'#1c2f44',ink:'#f1f5f9',hot:'#51B1FE',head:UA?'ВУЗОЛ C ПІД КОДОМ':'NODE C IS CODE LOCKED',
-      rows:UA?['Три цифри розкидані по депо','Ремонтна · Радіовузол · Серверна','Хибний код чути на весь сектор']:['Three digits are scattered around the depot','Repair bay · Radio room · Server room','A wrong code is heard across the sector'],draw(){
-        for(let i=0;i<3;i++){rrect(x,W/2-250+i*176,210,148,200,18);x.fillStyle='#0b1622';x.fill();x.font=MONO(500,150);x.fillStyle='#51B1FE';x.textAlign='center';x.fillText('?',W/2-176+i*176,362);x.textAlign='left';}}},
-    power:{bg:'#3a2a1c',ink:'#fbf2e4',hot:'#FEA158',head:UA?'СЕКТОР B БЕЗ ЖИВЛЕННЯ':'SECTOR B HAS NO POWER',
-      rows:UA?['Запобіжник лежить у Майстерні','Щит стоїть в Електрощитовій','Без струму вузол B мовчить']:['The fuse is in the Workshop','The board is in the Switchgear room','Without power node B stays silent'],draw(){
-        x.fillStyle='#FEA158';x.beginPath();x.arc(W/2,330,160,0,7);x.fill();bolt(x,W/2,330,250,'#3a2a1c');}}
+      rows:UA?['Зайди й натисни E або H','Чекай, доки кроки стихнуть','Усередині Ехо тебе не дістане']:['Step in and press E or H','Wait until the steps fade','Inside, Echo cannot reach you'],draw(){
+        rrect(x,W/2-150,170,300,330,26);x.fillStyle='#39d892';x.fill();crouch(x,W/2,350,250,'#062216');}}
   }[kind];
   x.fillStyle=data.bg;x.fillRect(0,0,W,H);
   data.draw();
@@ -2780,7 +2738,7 @@ let POSTER_LANG=null;
 function buildPosters(){
   if(!POSTERS.length)for(let i=0;i<8;i++)POSTERS.push(posterMaterial(brandPosterCanvas(i)));
   if(POSTER_LANG!==LANG){
-    ['dark','hide','power','code'].forEach((k,i)=>{
+    ['dark','hide'].forEach((k,i)=>{
       const cv=noticePosterCanvas(k);
       if(POSTERS[8+i]){POSTERS[8+i].t.image=cv;POSTERS[8+i].t.needsUpdate=true;}
       else POSTERS.push(posterMaterial(cv));
@@ -2856,8 +2814,8 @@ function lampTube(g,x,y,z,along,kind,state,opt){
   g.b(M.pGray,w,.07,d,x,y-.07,z);
   if(opt.rods){g.b(M.pDark,.03,opt.rods,.03,x+(along==='x'?.5:0),y,z+(along==='x'?0:.5));g.b(M.pDark,.03,opt.rods,.03,x-(along==='x'?.5:0),y,z-(along==='x'?0:.5));}
   const tw=along==='x'?1.2:.045,td=along==='x'?.045:1.2;
-  if(state<0&&!opt.group){for(const o of [-.045,.045])g.b(M.tubeOff,tw,.04,td,x+(along==='x'?0:o),y-.115,z+(along==='x'?o:0));return null;}
-  const steady=state===0&&!opt.group;
+  if(state<0){for(const o of [-.045,.045])g.b(M.tubeOff,tw,.04,td,x+(along==='x'?0:o),y-.115,z+(along==='x'?o:0));return null;}
+  const steady=state===0;
   let mesh=null;
   if(steady){for(const o of [-.045,.045])g.b(M.tube[kind],tw,.04,td,x+(along==='x'?0:o),y-.115,z+(along==='x'?o:0));}
   else{
@@ -2865,7 +2823,7 @@ function lampTube(g,x,y,z,along,kind,state,opt){
     mesh=new THREE.Mesh(new THREE.BoxGeometry(worldX?1.2:.14,.04,worldX?.14:1.2),glowMat(kind));
     mesh.position.set(g.wx(x,z),g.y0+y-.115,g.wz(x,z));world.add(mesh);
   }
-  const f=g.light({x,y:y-.1,z,kind,i:opt.i||1.5,r:opt.r||10,mode:state>0?state:0,mesh,group:opt.group||null,delay:opt.delay||0,backup:0});
+  const f=g.light({x,y:y-.1,z,kind,i:opt.i||1.5,r:opt.r||10,mode:state>0?state:0,mesh});
   if(steady&&opt.pool!==false)floorPool(g.wx(x,z),g.wz(x,z),kind,opt.poolR||3.4,opt.poolA||.5);
   return f;
 }
@@ -2877,12 +2835,12 @@ function lampBulk(g,x,y,z,dir,kind,state,opt){
   const px=x+n[0]*.16,pz=z+n[1]*.16;
   const lit=state>=0;
   let mesh=null;
-  if(lit&&state===0&&!opt.group)g.g(M.tube[kind],GEO.ball,px,y,pz,0,0,0,.085);
+  if(lit&&state===0)g.g(M.tube[kind],GEO.ball,px,y,pz,0,0,0,.085);
   else if(lit){mesh=new THREE.Mesh(new THREE.SphereGeometry(.085,10,8),glowMat(kind));mesh.position.set(g.wx(px,pz),y,g.wz(px,pz));world.add(mesh);}
   else g.g(M.tubeOff,GEO.ball,px,y,pz,0,0,0,.085);
   g.c(M.pDark,.105,.02,px,y+.09,pz,'y',8,undefined,false);g.c(M.pDark,.105,.02,px,y-.09,pz,'y',8,undefined,false);g.c(M.pDark,.105,.02,px,y,pz,'y',8,undefined,false);
   if(!lit)return null;
-  return g.light({x:px+n[0]*.35,y:y+.2,z:pz+n[1]*.35,kind,i:opt.i||1.0,r:opt.r||7,mode:state,mesh,group:opt.group||null,delay:opt.delay||0,backup:opt.backup||0,drop:.2});
+  return g.light({x:px+n[0]*.35,y:y+.2,z:pz+n[1]*.35,kind,i:opt.i||1.0,r:opt.r||7,mode:state,mesh,drop:.2});
 }
 // Industrial pendant dome.
 function lampBay(g,x,y,z,kind,state,opt){
@@ -2891,10 +2849,10 @@ function lampBay(g,x,y,z,kind,state,opt){
   g.c(M.pGray,.1,.26,x,y-.02,z,'y',10,.34);
   if(state<0){g.c(M.tubeOff,.2,.03,x,y-.16,z,'y',10);return null;}
   let mesh=null;
-  if(state===0&&!opt.group)g.c(M.tube[kind],.22,.03,x,y-.16,z,'y',12);
+  if(state===0)g.c(M.tube[kind],.22,.03,x,y-.16,z,'y',12);
   else{mesh=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.03,12),glowMat(kind));mesh.position.set(g.wx(x,z),y-.16,g.wz(x,z));world.add(mesh);}
-  const f=g.light({x,y:y-.2,z,kind,i:opt.i||1.9,r:opt.r||11,mode:state,mesh,group:opt.group||null,delay:opt.delay||0});
-  if(state===0&&!opt.group)floorPool(g.wx(x,z),g.wz(x,z),kind,opt.poolR||3.6,.55);
+  const f=g.light({x,y:y-.2,z,kind,i:opt.i||1.9,r:opt.r||11,mode:state,mesh});
+  if(state===0)floorPool(g.wx(x,z),g.wz(x,z),kind,opt.poolR||3.6,.55);
   return f;
 }
 // Recessed ceiling panel for suspended ceilings.
@@ -3236,7 +3194,7 @@ function fragmentAt(room,x,y,z,aim){
   bbox(M.pOrange,.46,.1,.32,x,y+.05,z,0);bbox(M.black,.4,.02,.26,x,y+.105,z,0);
   bbox(M.pOrange,.46,.3,.03,x,y+.24,z-.17,0);bbox(M.black,.4,.24,.01,x,y+.24,z-.152,0);
   bquad(M.pool.blue,x,y+.118,z,'up',.9,.9);
-  const sh={g,core,body,sp,bc,got:false,coded:false,sector:room.sector,room,baseY:y+.25,locked:false,aim:aim||new THREE.Vector3(x,y+.25,z)};
+  const sh={g,core,body,sp,bc,got:false,coded:false,sector:room.sector,room,baseY:y+.25,aim:aim||new THREE.Vector3(x,y+.25,z)};
   sh.marker=makeMarker(sh.aim,0x9fd4ff);
   SHARDS.push(sh);return sh;
 }
@@ -3387,134 +3345,32 @@ function buildFinalExit(){
 function relayAt(g,s){
   g.b(M.pDark,1.1,2.1,.6,0,0,.3);g.b(M.pGray,1.0,.7,.04,0,.08,.602);g.d('vent',0,.43,.625,'f',.8,.5);
   g.b(M.black,.86,.6,.03,0,1.22,.605);
-  if(s===2)g.d('keypad',.0,.98,.626,'f',.27,.36);
   for(let i=0;i<7;i++)g.d('led_a',-.36+i*.12,1.92,.603,'f',.04,.04);
   g.col(1.1,.6,0,.3,0,2.1);
   const dt=dynTex(320,220),scr=new THREE.Mesh(new THREE.PlaneGeometry(.78,.54),new THREE.MeshBasicMaterial({map:dt.t}));
   const p=g.p(0,.624,1.52);scr.position.copy(p);scr.rotation.y=g.face('f');world.add(scr);
   const led=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),new THREE.MeshBasicMaterial({color:0xffb02e}));led.position.copy(g.p(.42,.62,2.0));world.add(led);
-  const fx=g.light({x:0,y:1.5,z:1.3,kind:s===1?'amber':'green',i:.6,r:5,mode:4,drop:0,soft:true,group:s===1?'B':null});
+  const fx=g.light({x:0,y:1.5,z:1.3,kind:s===1?'amber':'green',i:.6,r:5,mode:4,drop:0,soft:true});
   g.d('node_'+'ABC'[s],0,2.55,.008,'f',2.0,.536);
   const item=addItem({type:'relay',sector:s,aim:g.p(0,.7,1.45),led,screen:dt,fx,color:0x9ff0ae,
-    label:()=>s<QUEST.stage?bi('Зарядити ліхтар','Recharge the lamp'):s===1&&!QUEST.groups.B?bi('Вузол знеструмлений','Node has no power'):bi('Передати дані','Deliver data')});
+    label:()=>s<QUEST.stage?bi('Зарядити ліхтар','Recharge the lamp'):bi('Передати дані','Deliver data')});
   QUEST.relays[s]=item;
 }
 function drawRelay(s){
   const it=QUEST.relays[s];if(!it)return;
-  const {x,w,h}=it.screen,n=questCount(s),done=QUEST.stage>s,dead=s===1&&!QUEST.groups.B;
-  x.fillStyle=dead?'#050606':'#041109';x.fillRect(0,0,w,h);
-  if(!dead){
-    const col=done?'#64E27F':n>=7?'#b4ffbd':'#ffb02e';
-    x.font=MONO(500,26);x.fillStyle=col;x.textAlign='center';
-    x.fillText((bi('ВУЗОЛ ','NODE '))+'ABC'[s],w/2,44);
-    x.font=MONO(500,done?34:64);
-    x.fillText(done?bi('ДАНІ ПЕРЕДАНО','DELIVERED'):n+' / 7',w/2,done?112:124);
-    x.font=MONO(400,20);
-    x.fillText(done?bi('E · ЗАРЯД ЛІХТАРЯ','E · LAMP CHARGE'):n>=7?(s===2?bi('E · ВВЕСТИ КОД','E · ENTER CODE'):bi('E · ПЕРЕДАТИ БЛОК','E · SEND BLOCK')):bi('БЛОК НЕПОВНИЙ','BLOCK INCOMPLETE'),w/2,172);
-    for(let i=0;i<7;i++){x.fillStyle=i<n?col:'rgba(255,255,255,.14)';x.fillRect(48+i*34,192,24,10);}
-    x.textAlign='left';
-  }else{x.font=MONO(400,18);x.fillStyle='#5a1a14';x.textAlign='center';x.fillText(bi('НЕМАЄ ЖИВЛЕННЯ','NO POWER'),w/2,118);x.textAlign='left';}
+  const {x,w,h}=it.screen,n=questCount(s),done=QUEST.stage>s;
+  x.fillStyle='#041109';x.fillRect(0,0,w,h);
+  const col=done?'#64E27F':n>=7?'#b4ffbd':'#ffb02e';
+  x.font=MONO(500,26);x.fillStyle=col;x.textAlign='center';
+  x.fillText((bi('ВУЗОЛ ','NODE '))+'ABC'[s],w/2,44);
+  x.font=MONO(500,done?34:64);
+  x.fillText(done?bi('ДАНІ ПЕРЕДАНО','DELIVERED'):n+' / 7',w/2,done?112:124);
+  x.font=MONO(400,20);
+  x.fillText(done?bi('E · ЗАРЯД ЛІХТАРЯ','E · LAMP CHARGE'):n>=7?bi('E · ПЕРЕДАТИ БЛОК','E · SEND BLOCK'):bi('БЛОК НЕПОВНИЙ','BLOCK INCOMPLETE'),w/2,172);
+  for(let i=0;i<7;i++){x.fillStyle=i<n?col:'rgba(255,255,255,.14)';x.fillRect(48+i*34,192,24,10);}
+  x.textAlign='left';
   it.screen.done();
-  it.led.material.color.setHex(dead?0x3a0d08:done?0x49ff8a:n>=7?0xb4ffbd:0xffb02e);
-}
-/* ---- sector A: evidence cabinet that needs the staff key card ---- */
-function evidenceCabinet(g,room){
-  g.b(M.pGray,1.2,2.0,.05,0,0,.025);g.b(M.pGray,.05,2.0,.6,-.575,0,.3);g.b(M.pGray,.05,2.0,.6,.575,0,.3);
-  g.b(M.pGray,1.2,.05,.6,0,1.95,.3);g.b(M.pGray,1.2,.12,.6,0,0,.3);
-  for(const y of [.62,1.08,1.54])g.b(M.steel,1.1,.02,.5,0,y,.3);
-  g.b(M.card,.3,.24,.3,-.3,.14,.3);g.b(M.card,.34,.2,.3,.3,.64,.3);g.b(M.pDark,.4,.1,.28,-.28,1.56,.3);
-  g.d('tag',.3,.76,.452,'f',.14,.08);g.d('cctv',0,2.2,.008,'f',.3,.3);
-  g.col(1.2,.6,0,.3,0,2.0);
-  const door=new THREE.Group();
-  const glass=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.8,.02),M.glass);glass.position.set(.55,0,0);door.add(glass);
-  for(const [w,h,x,y] of [[1.12,.05,.55,.9],[1.12,.05,.55,-.9],[.05,1.8,.02,0],[.05,1.8,1.08,0]]){const f=new THREE.Mesh(new THREE.BoxGeometry(w,h,.04),M.pDark);f.position.set(x,y,0);door.add(f);}
-  const hinge=g.p(-.55,.61,1.05);door.position.copy(hinge);door.rotation.y=g.face('f');world.add(door);
-  const led=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,.03),new THREE.MeshBasicMaterial({color:0xff4a36}));led.position.copy(g.p(.5,.63,1.2));world.add(led);
-  const sh=fragmentAt(room,g.wx(.02,.3),1.1,g.wz(.02,.3),g.p(.02,.66,1.3));sh.locked=true;
-  QUEST.cab={door,led,sh,base:door.rotation.y,sign:(g.ux*g.vz-g.uz*g.vx<0?1:-1),t:0};
-  addItem({type:'cabinet',sector:0,aim:g.p(.3,.66,1.15),color:0xffb9a8,active:()=>!QUEST.cabinet,
-    label:()=>QUEST.inv.card?bi('Відчинити шафу карткою','Open the cabinet with the card'):bi('Шафа доказів · зачинено','Evidence cabinet · locked')});
-}
-function openCabinet(instant){
-  QUEST.cabinet=true;const c=QUEST.cab;if(!c)return;
-  c.led.material.color.setHex(0x49ff8a);c.sh.locked=false;
-  if(instant){c.door.rotation.y=c.base+c.sign*1.9;return;}
-  c.t=0;TICK.push(dt=>{if(c.t>=1)return;c.t=Math.min(1,c.t+dt/1.1);const e=c.t*c.t*(3-2*c.t);c.door.rotation.y=c.base+c.sign*1.9*e;});
-}
-/* ---- sector B: main switchboard ---- */
-function switchboard(g){
-  g.b(M.pGray,1.7,2.1,.5,0,.05,.25);g.b(M.pDark,1.74,.05,.54,0,0,.25);
-  g.d('panel',-.42,1.2,.502,'f',.72,1.06);g.d('fusebox',.46,1.5,.502,'f',.5,.66);
-  g.b(M.black,.3,.36,.02,.46,.72,.505);
-  g.d('skull',0,2.45,.008,'f',.9,.53);
-  g.b(M.rub,1.6,.02,.9,0,0,1.0);
-  g.col(1.7,.5,0,.25,0,2.15);
-  const fuse=new THREE.Group();
-  const fb=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.2,10),M.pWhite);fuse.add(fb);
-  for(const s of [-1,1]){const cap=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.04,10),M.pYellow);cap.position.y=s*.09;fuse.add(cap);}
-  fuse.position.copy(g.p(.46,.53,.9));fuse.visible=false;world.add(fuse);
-  const lever=new THREE.Group();
-  const arm=new THREE.Mesh(new THREE.BoxGeometry(.05,.34,.05),M.steel);arm.position.y=-.17;lever.add(arm);
-  const grip=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.16,8),M.pRed);grip.rotation.z=Math.PI/2;grip.position.y=-.34;lever.add(grip);
-  lever.position.copy(g.p(-.02,.56,1.0));lever.rotation.y=g.face('f');lever.rotation.order='YXZ';lever.rotation.x=-.9;world.add(lever);
-  const led=new THREE.Mesh(new THREE.SphereGeometry(.04,10,8),new THREE.MeshBasicMaterial({color:0xff4a36}));led.position.copy(g.p(.46,.53,1.14));world.add(led);
-  QUEST.board={fuse,lever,led};
-  addItem({type:'breaker',sector:1,aim:g.p(.2,.6,.95),color:0xffd9a8,active:()=>!QUEST.groups.B,
-    label:()=>QUEST.inv.fuse?bi('Вставити запобіжник і ввімкнути живлення','Fit the fuse and switch the power on'):bi('Головний щит · бракує запобіжника','Main board · fuse missing')});
-}
-function powerOn(instant){
-  QUEST.groups.B=true;QUEST.powerT=instant?-99:Game.time;
-  const b=QUEST.board;if(b){b.fuse.visible=true;b.led.material.color.setHex(0x49ff8a);b.lever.rotation.x=instant?.9:-.9;
-    if(!instant){let t=0;TICK.push(dt=>{if(t>=1)return;t=Math.min(1,t+dt/.35);b.lever.rotation.x=-.9+1.8*t;});}}
-  if(M.poolB)M.poolB.visible=true;
-  drawRelay(1);
-}
-/* ---- clue surfaces for the node C code ---- */
-const CLUES=[];
-function clueTex(i){
-  if(!CLUES[i])CLUES[i]=dynTex(256,256);
-  const d=CLUES[i],x=d.x,n=QUEST.code[i];
-  x.clearRect(0,0,256,256);
-  if(i===0){ // marker on the whiteboard
-    x.font=FONT(600,34);x.fillStyle='rgba(160,30,30,.9)';x.textAlign='center';x.fillText(bi('КОД ВУЗЛА C','NODE C CODE'),128,54);
-    x.font=FONT(700,150);x.fillText(n+' · ·',128,196);x.textAlign='left';
-    x.strokeStyle='rgba(160,30,30,.9)';x.lineWidth=5;x.strokeRect(14,70,228,150);
-  }else if(i===1){ // sticky note
-    x.fillStyle='#f6e58a';x.fillRect(18,18,220,220);x.fillStyle='rgba(0,0,0,.08)';x.fillRect(18,200,220,38);
-    x.font=FONT(500,30);x.fillStyle='#2a2a2e';x.textAlign='center';x.fillText(bi('друга цифра','second digit'),128,74);
-    x.font=FONT(700,130);x.fillText(String(n),128,196);x.textAlign='left';
-  }else{ // label printer strip on a rack
-    x.fillStyle='#e9e4d4';x.fillRect(8,64,240,128);x.fillStyle='#1c1d1f';x.font=MONO(500,24);x.textAlign='center';x.fillText('RACK 07 · PIN 3',128,100);
-    x.font=MONO(600,84);x.fillText('· · '+n,128,176);x.textAlign='left';
-  }
-  d.done();return d;
-}
-function clueAt(i,pos,face,w,h,aim,roomName){
-  const d=clueTex(i),m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:d.t,transparent:true,roughness:.8,polygonOffset:true,polygonOffsetFactor:-3,polygonOffsetUnits:-3}));
-  m.position.copy(pos);if(face==='up'){m.rotation.x=-Math.PI/2;}else m.rotation.y=face;world.add(m);
-  addItem({type:'clue',sector:2,index:i,aim,color:0xfff2a8,active:()=>true,
-    label:()=>QUEST.digits[i]?bi('Цифра '+(i+1)+': '+QUEST.code[i],'Digit '+(i+1)+': '+QUEST.code[i]):bi('Оглянути запис','Read the note')});
-}
-/* ---- small pickups ---- */
-function pickupMesh(kind){
-  const g=new THREE.Group();
-  if(kind==='card'){
-    const c=new THREE.Mesh(new THREE.BoxGeometry(.09,.006,.056),new THREE.MeshStandardMaterial({color:0x2a6fb0,roughness:.4,emissive:0x0e2c4a,emissiveIntensity:.6}));g.add(c);
-    const st=new THREE.Mesh(new THREE.BoxGeometry(.03,.007,.056),M.pWhite);st.position.x=-.02;g.add(st);
-    const cord=new THREE.Mesh(new THREE.TorusGeometry(.07,.006,5,14),M.pRed);cord.rotation.x=Math.PI/2;cord.position.set(.1,0,0);g.add(cord);
-  }else{
-    const b=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.2,10),M.pWhite);b.rotation.z=Math.PI/2;g.add(b);
-    for(const s of [-1,1]){const cap=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.04,10),M.pYellow);cap.rotation.z=Math.PI/2;cap.position.x=s*.09;g.add(cap);}
-  }
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:M.glowT,color:kind==='card'?0x51B1FE:0xFEA158,transparent:true,opacity:.22,blending:THREE.AdditiveBlending,depthWrite:false}));
-  sp.scale.set(.5,.5,1);g.add(sp);
-  return g;
-}
-function pickupAt(kind,pos,sector,id){
-  const g=pickupMesh(kind);g.position.copy(pos);world.add(g);
-  const names={card:[bi('Картка доступу','Access card')],fuse:[bi('Запобіжник 380 В','380 V fuse')]};
-  return addItem({type:kind,sector,id,g,aim:pos.clone().add(new THREE.Vector3(0,.06,0)),color:kind==='card'?0x9fd4ff:0xffd9a8,taken:false,
-    active(){return !this.taken;},label:()=>bi('Забрати: ','Take: ')+names[kind][0]});
+  it.led.material.color.setHex(done?0x49ff8a:n>=7?0xb4ffbd:0xffb02e);
 }
 
 function buildStation(coded){
@@ -3522,10 +3378,7 @@ function buildStation(coded){
   buildStationMaterials();buildAtlas();buildPosters();
   const NC=METRO.w*METRO.h;
   QUEST={floor:new Uint8Array(NC),cls:new Uint8Array(NC),roomOf:new Int16Array(NC).fill(-1),rooms:[],items:[],gates:[],stage:0,found:[],visited:new Set(),current:null,charge:0,
-    inv:{card:false,fuse:false},groups:{B:false},powerT:-99,cabinet:false,code:[1+((Math.random()*9)|0),(Math.random()*10)|0,(Math.random()*10)|0],
-    digits:[false,false,false],patrol:[[],[],[]],seenSector:new Set(),relays:[],taken:[],cab:null,board:null,lit:0,litClock:0};
-  if(!M.poolB){M.poolB=M.pool.warm.clone();M.poolB.userData=Object.assign({},M.pool.warm.userData);}
-  M.poolB.visible=false;
+    patrol:[[],[],[]],seenSector:new Set(),relays:[]};
   const ci=x=>Math.round((x+26)/2),cj=z=>Math.round((z+24)/2);
   const carve=(xa,xb,za,zb,cls,ri)=>{
     for(let j=cj(za);j<cj(zb);j++)for(let i=ci(xa);i<ci(xb);i++){
@@ -3632,9 +3485,7 @@ function dressRoom(room){
     F:u=>g.at(u,.11,0),B:u=>g.at(u,11.89,2),L:v=>g.at(.11,v,3),R:v=>g.at(W-.11,v,1),
     frag:(u,v,y,au,av)=>fragmentAt(room,g.wx(u,v),y,g.wz(u,v),au!==undefined?g.p(au,av,y+.25):undefined),
     patrol:(u,v)=>QUEST.patrol[s].push(g.p(u,v,0)),
-    litter:n=>{for(let i=0;i<n;i++)g.d(Math.random()<.7?'paper':'news',rc(1.2,W-1.2),.012,rc(1.4,10.6),'u',.21,.27,false,rc(0,6.3));},
-    // B rooms follow the sector breaker; everything else is always powered
-    grp:s===1?'B':null
+    litter:n=>{for(let i=0;i<n;i++)g.d(Math.random()<.7?'paper':'news',rc(1.2,W-1.2),.012,rc(1.4,10.6),'u',.21,.27,false,rc(0,6.3));}
   };
   /* doorway: frame, leaves swung open inside the reveal, plate above */
   const fm=[M.pGreen,M.pGray,M.pYellow][s],lm=[M.pGreen,M.pGray,M.pBlue][s];
@@ -3646,9 +3497,6 @@ function dressRoom(room){
   g.d('exit',6,3.13,.158,'f',.62);
   g.d('switch',8.42,1.25,.117,'f',.09,.12);g.d('socket',8.62,.35,.117,'f',.09,.09);
   ROOMS[room.id](c);
-  if(c.card)pickupAt('card',c.card,s,'card');
-  if(c.fuse)pickupAt('fuse',c.fuse,s,'fuse');
-  if(c.clue)clueAt(...c.clue);
 }
 function nodeRoom(c,letter){
   const {g,W,h,F,B,L,R}=c;
@@ -3667,7 +3515,7 @@ function nodeRoom(c,letter){
   g.d('big'+letter,W/2,2.3,11.883,'b',1.7,2.04,true);
   g.d('grate',6.6,.012,3.2,'u',1.6,.42);
   PR.boxes(B(7.6),4);
-  lampTube(g,6.4,h,5.8,'z','cool',1,{i:1.2,r:9,group:c.grp});
+  lampTube(g,6.4,h,5.8,'z','cool',1,{i:1.2,r:9});
   c.frag(4.05,6.1,.9,5.0,6.2);
   // bracket that holds the fragment case on the core
   core.b(M.steel,.5,.04,.36,.95,.86,.5);
@@ -3696,7 +3544,14 @@ const ROOMS={
     PR.console(R(4.6),3.2,['crt_cam','crt_static','crt_cam','crt_cam','crt_static']);PR.chair(g.at(12.5,4.6,1));
     g.b(M.pDark,.08,1.26,2.5,W-.15,1.5,4.6);g.d('monwall',W-.19,2.13,4.6,'l',2.4,1.2);
     g.light({x:W-1.3,y:1.9,z:4.6,kind:'blue',i:.9,r:6,mode:4,drop:0,soft:true});
-    evidenceCabinet(L(5.4),c.room);
+    // open evidence rack, the fragment sits on the middle shelf
+    const ev=L(5.4);
+    ev.b(M.pGray,1.2,2.0,.05,0,0,.025);ev.b(M.pGray,.05,2.0,.6,-.575,0,.3);ev.b(M.pGray,.05,2.0,.6,.575,0,.3);
+    ev.b(M.pGray,1.2,.05,.6,0,1.95,.3);ev.b(M.pGray,1.2,.12,.6,0,0,.3);
+    for(const y of [.62,1.08,1.54])ev.b(M.steel,1.1,.02,.5,0,y,.3);
+    ev.b(M.card,.3,.24,.3,-.3,.14,.3);ev.b(M.card,.34,.2,.3,.3,.64,.3);ev.b(M.pDark,.4,.1,.28,-.28,1.56,.3);
+    ev.d('tag',.3,.76,.452,'f',.14,.08);ev.col(1.2,.6,0,.3,0,2.0);
+    fragmentAt(c.room,ev.wx(.02,.3),1.1,ev.wz(.02,.3),ev.p(.02,.66,1.3));
     hideAt(L(2.2));
     PR.cot(F(2.9));PR.lockers(F(10.5),4,M.pGray);
     PR.table(g.at(7.0,5.3,0),1.4,.8);g.d('news',6.8,.763,5.7,'u',.3,.4,false,.4);g.d('phone',7.4,.763,5.75,'u',.2,.2);
@@ -3740,7 +3595,6 @@ const ROOMS={
     PR.table(g.at(6.6,4.5,0),1.6,.9);g.d('news',7.0,.763,4.85,'u',.3,.4,false,.25);
     g.c(M.pWhite,.04,.09,6.2,.805,4.8,'y',8);g.c(M.pBlue,.04,.09,6.9,.805,5.2,'y',8);
     PR.chair(g.at(6.6,5.5,0));PR.chair(g.at(5.6,4.6,3));PR.chair(g.at(7.6,4.6,1));
-    c.card=g.p(6.35,5.12,.775);
     PR.fridge(R(3.5));PR.kitchen(R(5.7),2.4);
     c.frag(W-.42,6.4,.9,W-1.5,6.4);
     hideAt(F(2.0));
@@ -3780,14 +3634,18 @@ const ROOMS={
     PR.crate(g.at(11.9,4.2,0),.7,true);c.frag(11.9,4.55,.57);
     g.d('warn',.117,2.5,3.0,'r',.34,.31);g.d('gauge',W-.117,1.7,3.6,'l',.24,.24);
     PR.pallet(B(4.0),'sacks');PR.barrel(B(9.0),M.pGray);
-    lampBulk(g,.11,2.7,3.0,'r','warm',0,{group:'B',i:1.2,r:8,delay:.5});lampBulk(g,W-.11,2.7,8.0,'l','warm',0,{group:'B',i:1.2,r:8,delay:.9});
+    lampBulk(g,.11,2.7,3.0,'r','warm',0,{i:1.2,r:8});lampBulk(g,W-.11,2.7,8.0,'l','warm',0,{i:1.2,r:8});
     lampBulk(g,5.0,3.3,.16,'f','red',3,{i:.55,r:5.5});
     c.patrol(8.0,7.4);c.litter(1);
   },
   B02(c){ // switchgear
     const {g,W,h,F,B,L,R}=c;
     for(const v of [2.7,3.5,4.3,5.1,5.9])PR.elecCab(L(v),.8,false);
-    switchboard(R(4.6));
+    // main board
+    const mb=R(4.6);
+    mb.b(M.pGray,1.7,2.1,.5,0,.05,.25);mb.b(M.pDark,1.74,.05,.54,0,0,.25);
+    mb.d('panel',-.42,1.2,.502,'f',.72,1.06);mb.d('fusebox',.46,1.5,.502,'f',.5,.66);
+    mb.d('skull',0,2.45,.008,'f',.9,.53);mb.b(M.rub,1.6,.02,.9,0,0,1.0);mb.col(1.7,.5,0,.25,0,2.15);
     // transformer behind the walkway
     const t=g.at(7.0,4.6,0);
     t.b(M.pGray,1.5,1.5,1.3,0,.2,.75);t.b(M.pDark,1.7,.2,1.5,0,0,.75);
@@ -3798,7 +3656,7 @@ const ROOMS={
     PR.firePoint(F(9.2));g.d('skull',11.4,1.8,.117,'f',.9,.53);
     PR.table(g.at(10.4,6.6,0),1.0,.6,M.steel);c.frag(10.4,6.9,.76);
     PR.cabinet(B(4.0),1.4,1.9,.5,M.pGray,'cabdoor');
-    lampBulk(g,.11,2.9,7.2,'r','warm',0,{group:'B',i:1.1,r:8,delay:.2});lampBulk(g,W-.11,2.9,2.2,'l','warm',0,{group:'B',i:1.1,r:8,delay:.3});
+    lampBulk(g,.11,2.9,7.2,'r','warm',0,{i:1.1,r:8});lampBulk(g,W-.11,2.9,2.2,'l','warm',0,{i:1.1,r:8});
     lampBulk(g,W-.11,2.6,6.4,'l','red',3,{i:.6,r:6});
     c.patrol(9.6,5.0);c.litter(2);
   },
@@ -3806,9 +3664,6 @@ const ROOMS={
     const {g,W,h,F,B,L,R}=c;
     PR.workbench(L(3.6),true);PR.workbench(L(6.1),false);
     g.d('tools',.117,1.75,3.6,'r',1.9,.95);
-    // open carton with the spare fuse
-    const bx=g.at(.5,6.1,3).lift(.9);bx.b(M.card,.3,.1,.22,0,0,.02);
-    c.fuse=g.p(.52,6.1,1.03);
     PR.toolChest(F(2.4));PR.toolChest(F(9.3));
     // pillar drill
     const d=R(3.4);d.b(M.pGreen,.5,.1,.6,0,0,.3);d.c(M.steel,.05,1.7,0,.95,.14,'y',8);d.b(M.pGreen,.3,.34,.56,0,1.5,.3);d.b(M.steel,.36,.04,.36,0,.95,.36);d.c(M.steel,.02,.3,0,1.36,.44,'y',6);d.col(.5,.6,0,.3,0,1.9);
@@ -3818,7 +3673,7 @@ const ROOMS={
     for(const [m,x] of [[M.pBlue,-.14],[M.pOrange,.14]]){const w=B(11.4);w.c(m,.11,1.3,x,.7,.2,'y',10);w.c(M.steel,.04,.12,x,1.4,.2,'y',6);}
     PR.table(g.at(7.2,4.8,0),1.6,.9,M.steel);g.d('paper',7.7,.763,5.2,'u',.2,.26,false,.3);c.frag(7.0,5.25,.76);
     g.d('warn',9.3,2.2,.117,'f',.34,.31);posterBox(F(11.6),10,false,1.0,.9);
-    lampBulk(g,.11,2.9,1.6,'r','warm',0,{group:'B',i:1.2,r:8,delay:.4});lampBulk(g,W-.11,2.9,7.9,'l','warm',0,{group:'B',i:1.2,r:8,delay:.7});
+    lampBulk(g,.11,2.9,1.6,'r','warm',0,{i:1.2,r:8});lampBulk(g,W-.11,2.9,7.9,'l','warm',0,{i:1.2,r:8});
     lampBulk(g,5.0,3.3,.16,'f','red',3,{i:.5,r:5.5});
     c.patrol(10.2,7.0);c.litter(3);
   },
@@ -3831,7 +3686,7 @@ const ROOMS={
     PR.crate(F(2.2),.8,true);PR.crate(F(1.2),.6);
     PR.shelf(B(7.0),2.0,2.0,'cables');
     g.c(M.rub,.04,5,6,.045,2.6,'x',6);g.c(M.pOrange,.03,4,9,.035,7.4,'x',6);
-    lampBulk(g,.11,3.0,7.2,'r','warm',0,{group:'B',i:1.1,r:8,delay:.6});lampBulk(g,W-.11,3.0,1.8,'l','warm',0,{group:'B',i:1.1,r:8,delay:.8});
+    lampBulk(g,.11,3.0,7.2,'r','warm',0,{i:1.1,r:8});lampBulk(g,W-.11,3.0,1.8,'l','warm',0,{i:1.1,r:8});
     c.patrol(6.9,7.5);c.litter(2);
   },
   B05(c){ // pump room
@@ -3845,7 +3700,7 @@ const ROOMS={
     PR.table(g.at(12.4,4.0,0),1.0,.6,M.steel);c.frag(12.4,4.3,.76);
     PR.bucket(F(9.2));g.d('grate',6.0,.012,7.0,'u',1.8,.47);g.d('manhole',3.4,.012,6.6,'u',.9,.9);g.d('warn',.117,2.6,2.6,'r',.34,.31);
     for(const [u,v,r] of [[4.6,3.0,1.1],[8.4,6.8,1.3],[11.5,2.2,.8]]){const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),M.puddle);m.rotation.x=-Math.PI/2;m.position.copy(g.p(u,v,.014));m.renderOrder=2;world.add(m);}
-    lampBulk(g,.11,2.9,7.4,'r','warm',0,{group:'B',i:1.1,r:8,delay:.5});lampBulk(g,W-.11,2.9,3.0,'l','warm',0,{group:'B',i:1.1,r:8,delay:.6});
+    lampBulk(g,.11,2.9,7.4,'r','warm',0,{i:1.1,r:8});lampBulk(g,W-.11,2.9,3.0,'l','warm',0,{i:1.1,r:8});
     lampBulk(g,5.0,3.3,.16,'f','red',3,{i:.5,r:5.5});
     c.patrol(8.2,7.6);
   },
@@ -3853,7 +3708,7 @@ const ROOMS={
     const {g,W,h,F,B,L,R}=c;
     PR.console(L(4.6),3.2,['crt_term','crt_wave','crt_static','crt_cam','crt_term']);PR.chair(g.at(1.5,4.0,3));PR.chair(g.at(1.5,5.4,3));
     g.b(M.pDark,.08,1.4,3.4,.15,1.45,4.6);g.d('track',.196,2.15,4.6,'r',3.2,1.22);
-    g.light({x:1.5,y:2.0,z:4.6,kind:'green',i:.8,r:6,mode:4,drop:0,soft:true,group:'B'});
+    g.light({x:1.5,y:2.0,z:4.6,kind:'green',i:.8,r:6,mode:4,drop:0,soft:true});
     PR.console(R(4.8),2.6,['crt_static','crt_term','crt_wave','crt_cam']);PR.chair(g.at(12.4,4.8,1));
     PR.table(g.at(7.0,4.7,0),1.8,.9);g.d('map',7.1,.763,5.15,'u',.9,.54,false,.1);g.d('phone',6.3,.763,4.95,'u',.2,.2);
     c.frag(7.7,5.3,.76);
@@ -3888,7 +3743,6 @@ const ROOMS={
     for(const u of [4.8,8.4]){g.b(M.pYellow,.14,3.0,.14,u,0,5.1);g.col(.14,.14,u,5.1,0,3);}
     g.b(M.pYellow,3.8,.2,.18,6.6,3.0,5.1);g.b(M.pDark,.26,.3,.22,6.9,2.7,5.1);g.c(M.steel,.012,.9,6.9,2.25,5.1,'y',5);g.b(M.steel,.1,.14,.04,6.9,1.68,5.1);
     g.d('whiteboard',.117,1.75,4.2,'r',1.7,1.06);
-    c.clue=[0,g.p(.125,4.62,1.72),g.face('r'),.62,.62,g.p(.3,4.4,1.7)];
     PR.toolChest(L(6.2));PR.toolChest(L(7.0));
     PR.workbench(F(10.8),true);c.frag(11.0,.5,.92,11.0,1.6);
     PR.barrel(R(5.6),M.pGray);PR.barrel(R(6.3),M.pRed);
@@ -3902,7 +3756,6 @@ const ROOMS={
     for(const v of [3.0,3.7,4.4])PR.rack(L(v),true);
     g.light({x:1.6,y:1.4,z:3.7,kind:'green',i:.6,r:5,mode:4,drop:0,soft:true});
     PR.desk(R(4.8),{phone:true});PR.radio(R(4.8).at(-.1,.1,0).lift(.78));PR.chair(g.at(12.7,4.8,1));
-    c.clue=[1,g.p(W-.55,5.3,.795),'up',.2,.2,g.p(W-.6,5.3,.9)];
     for(const v of [3.2,6.3])g.c(M.rub,.03,h-1.3,W-.2,1.3+(h-1.3)/2,v,'y',6);
     PR.table(g.at(6.6,5.0,0),1.4,.8);g.d('news',7.0,.763,5.35,'u',.3,.4,false,-.3);c.frag(6.3,5.4,.76);
     PR.sofa(F(2.2),M.pGreen);
@@ -3937,7 +3790,6 @@ const ROOMS={
   C06(c){ // server room
     const {g,W,h,F,B,L,R}=c;
     for(let i=0;i<6;i++){PR.rack(g.at(3.5+i*.6,3.2,0),i!==4);PR.rack(g.at(3.5+i*.6,7.0,2),i!==1);}
-    c.clue=[2,g.p(5.3,4.115,1.5),g.face('f'),.3,.3,g.p(5.3,4.6,1.5)];
     PR.cabinet(R(4.6),1.2,2.0,.7,M.pWhite,'vent');
     PR.desk(L(5.1),{crt:'crt_term',glow:'blue',kb:true});PR.chair(g.at(1.3,5.1,3));
     PR.table(g.at(9.2,4.8,0),.9,.6,M.steel);c.frag(9.2,5.1,.76);
@@ -4047,7 +3899,7 @@ function dressCorridor(s){
     litter(26);
   }else if(s===1){
     /* ---- B: service wing, dark until the breaker is thrown ---- */
-    posterBox(N(8.9),10,false);chargerAt(N(20.2));
+    posterBox(N(8.9),3,false);chargerAt(N(20.2));
     for(const z of [-3.4,-2.6,-1.8,-1.0,-.2])PR.elecCab(cg.at(23.4,z,1),.8,false);
     hideAt(N(27.6));PR.barrel(N(30.2),M.pBlue);PR.barrel(N(30.9),M.pGray);PR.barrel(cg.at(30.5,-3.2,0),M.pRed);
     const mf=N(41.0);PR.pipes(mf,-1.6,1.6,1.3,.28,.1,M.pBlue);PR.pipes(mf,-1.6,1.6,1.75,.28,.07,M.pYellow);PR.valve(mf,-.7,1.3,.44);PR.valve(mf,.6,1.75,.4,M.pBlue);mf.d('gauge',0,2.2,.008,'f',.26,.26);
@@ -4068,14 +3920,14 @@ function dressCorridor(s){
     cg.b(M.pGray,89,.5,.9,46,3.95,3.25);for(let o=8;o<90;o+=12)cg.d('vent',o,3.948,3.25,'dn',.9,.56);
     steamAt(nw.p(66.3,.3,4.05),new THREE.Vector3(.2,-.9,1));
     const st=[0,0,1,0,-1,0,0,2,0,-1,0,1,0,0,-1];
-    for(let i=0;i<15;i++)lampTube(cg,6+i*6,4.1,-.4,'z','warm',st[i],{rods:.5,i:1.6,r:10.5,group:'B',delay:.25+Math.abs(6+i*6-15)*.035});
+    for(let i=0;i<15;i++)lampTube(cg,6+i*6,4.1,-.4,'z','warm',st[i],{rods:.5,i:1.6,r:10.5});
     for(const [o,n] of [[18.6,1],[45.2,0],[73.9,1],[88.8,0]]){const w=n?N(o):S(o);lampBulk(w,0,2.9,0,'f','red',3,{i:.75,r:6.5});}
     for(let o=10;o<90;o+=16)cg.d('grate',o,.012,0,'u',2.4,.42);
     for(const [o,z,r] of [[14,2.2,1.2],[37,-1.4,1.0],[58,1.8,1.4],[82,-.6,1.1]]){const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),M.puddle);m.rotation.x=-Math.PI/2;m.position.set(b+o,.014,z);m.renderOrder=2;world.add(m);}
     litter(10);
   }else{
     /* ---- C: depot ---- */
-    posterBox(N(8.9),11,true);chargerAt(N(20.2));PR.toolChest(N(22.2));PR.toolChest(N(23.1));
+    posterBox(N(8.9),2,true);chargerAt(N(20.2));PR.toolChest(N(22.2));PR.toolChest(N(23.1));
     hideAt(N(27.8));PR.wheelset(N(30.6));
     trainCar(cg.at(49,-3.5,0),18.6,{lift:.35});
     cg.b(M.pYellow,20.5,.012,.14,49,0,-.55);
@@ -4101,10 +3953,10 @@ function dressCorridor(s){
 function dressPassages(s){
   const b=-26+s*92,gN=Frame(b,-19.89,1,0,0,1),gS=Frame(b,19.89,-1,0,0,-1);
   const SX=o=>-o; // the south frame runs backwards
-  const st=[[0,-1,1],[0,0,0],[-1,0,1]][s],grp=s===1?'B':null;
+  const st=[[0,-1,1],[0,0,0],[-1,0,1]][s];
   [26,50,74].forEach((o,i)=>{
-    lampBulk(gN,o,2.6,0,'f','amber',st[i],{i:.9,r:7,group:st[i]<0?null:grp,delay:.8});
-    if(o<72)lampBulk(gS,SX(o),2.6,0,'f','amber',st[(i+1)%3],{i:.9,r:7,group:st[(i+1)%3]<0?null:grp,delay:.8});
+    lampBulk(gN,o,2.6,0,'f','amber',st[i],{i:.9,r:7});
+    if(o<72)lampBulk(gS,SX(o),2.6,0,'f','amber',st[(i+1)%3],{i:.9,r:7});
     QUEST.patrol[s].push(new THREE.Vector3(b+o,0,-18));if(o<72)QUEST.patrol[s].push(new THREE.Vector3(b+o,0,18));
   });
   // service pipes only between the rooms, where there is a wall to carry them
@@ -4137,12 +3989,6 @@ function questHint(s){
   return missing.map(a=>a.room.id+' '+labelPair(a.room.name)).join(' · ');
 }
 Object.assign(Snd,{
-  swipe(){this.tone(1320,.07,'square',.05);setTimeout(()=>this.tone(1760,.12,'square',.05),90);this.noise(.5,'lowpass',500,.12,.8);},
-  deny(){this.tone(196,.16,'square',.06);setTimeout(()=>this.tone(147,.26,'square',.06),150);},
-  keyBeep(){this.tone(1240,.06,'square',.04);},
-  alarm(){for(let i=0;i<6;i++)setTimeout(()=>this.tone(i%2?880:660,.2,'sawtooth',.11),i*210);},
-  thunk(v){this.noise(.22,'lowpass',180,v||.3,.9);this.tone(62,.25,'sine',(v||.3)*.6,40);},
-  powerUp(){this.thunk(.5);for(let i=0;i<9;i++)setTimeout(()=>this.thunk(.16),350+i*210);this.tone(50,3.2,'sawtooth',.035,100);},
   // hiss of escaping steam and mains hum, mixed by where the courier stands
   amb(steam,hum){
     if(!this.ok)return;
@@ -4180,35 +4026,19 @@ function itemCard(kind,title,sub){
   el.querySelector('.it').textContent=title;el.querySelector('.is').textContent=sub||'';
   el.classList.add('on');cardT=3.6;
 }
-function drawInventory(){
-  const el=document.getElementById('inv');if(!QUEST){el.innerHTML='';return;}
-  const q=QUEST,parts=[];
-  if(q.inv.card&&!q.cabinet)parts.push(`<span class="chip2 k-card">${bi('Картка доступу','Access card')}</span>`);
-  if(q.inv.fuse)parts.push(`<span class="chip2 k-fuse">${bi('Запобіжник','Fuse')}</span>`);
-  if(q.stage===2&&q.digits.some(Boolean))parts.push(`<span class="chip2 k-code">${bi('Код','Code')} ${q.digits.map((d,i)=>d?q.code[i]:'·').join(' ')}</span>`);
-  const html=parts.join('');
-  if(el.dataset.h!==html){el.innerHTML=html;el.dataset.h=html;}
-}
 let sectorT=0;
 function sectorCard(s){
   const el=document.getElementById('sectorCard');
   el.querySelector('.sl').textContent=bi('СЕКТОР ','SECTOR ')+'ABC'[s];
   el.querySelector('.sn').textContent=labelPair(SECTOR_NAMES[s]);
-  el.querySelector('.ss').textContent=[bi('Зал очікування. Лампи ще жевріють, і саме в них тебе видно.','The waiting hall. Lamps still glow, and that is where you can be seen.'),
-    bi('Живлення вимкнено. Знайди запобіжник і підніми рубильник.','The power is off. Find the fuse and throw the breaker.'),
-    bi('Вузол C зачинений кодом. Три цифри лежать у трьох кімнатах.','Node C is code locked. Three digits wait in three rooms.')][s];
+  el.querySelector('.ss').textContent=[bi('Сім фрагментів лежать у кімнатах уздовж залу.','Seven fragments lie in the rooms along the hall.'),
+    bi('Сім фрагментів у майстернях і щитових.','Seven fragments in the workshops and plant rooms.'),
+    bi('Останні сім фрагментів, далі вихід.','The last seven fragments, then the exit.')][s];
   el.classList.add('on');sectorT=5;
 }
 /* ---- actions ---- */
-function alertEchoes(pos,sector){
-  ECHOES.forEach(e=>{
-    if(e.homeSector!==sector||e.state==='hunt')return;
-    e.state='search';e.searchT=12;e.lastSeen.copy(pos);e.searchTarget=pos.clone();e.searchMove=6;e.path=null;e.repath=0;
-  });
-}
 function saveCheckpoint(){
-  CHECKPOINT={stage:QUEST.stage,got:SHARDS.map(a=>a.got),found:QUEST.found.slice(),runTime:Game.runTime,
-    inv:Object.assign({},QUEST.inv),power:QUEST.groups.B,cabinet:QUEST.cabinet,code:QUEST.code.slice(),digits:QUEST.digits.slice(),taken:QUEST.taken.slice()};
+  CHECKPOINT={stage:QUEST.stage,got:SHARDS.map(a=>a.got),found:QUEST.found.slice(),runTime:Game.runTime};
 }
 function deliver(a){
   const d=QUEST.gates[a.sector];openQuestDoor(d);Snd.door();
@@ -4234,100 +4064,27 @@ function questInteract(){
     if(n===7)toast(bi('Блок повний. Неси його до вузла ','The block is complete. Carry it to node ')+'ABC'[sh.sector]+'.');
   }else if(a.type==='note'){
     a.read=true;if(!q.found.includes(a.sector))q.found.push(a.sector);openJournal();
-  }else if(a.type==='card'||a.type==='fuse'){
-    a.taken=true;a.g.visible=false;a.marker.visible=false;q.taken.push(a.id);Snd.pickup();
-    if(a.type==='card'){q.inv.card=true;itemCard('card',bi('Картка доступу','Access card'),bi('Відчиняє шафу доказів у кімнаті охорони (A02).','Opens the evidence cabinet in Security (A02).'));}
-    else{q.inv.fuse=true;itemCard('fuse',bi('Запобіжник 380 В','380 V fuse'),bi('Встав у головний щит в Електрощитовій (B02).','Fit it into the main board in Switchgear (B02).'));}
-  }else if(a.type==='cabinet'){
-    if(!q.inv.card){Snd.deny();caption(bi('ШАФА ДОКАЗІВ','EVIDENCE CABINET'),bi('Зачинено. Фрагмент видно крізь скло. Потрібна картка доступу, чергова зміна тримала її в кімнаті персоналу (A05).','Locked. The fragment is visible through the glass. You need the access card; the shift kept it in the staff room (A05).'));return;}
-    Snd.swipe();openCabinet();toast(bi('Шафу відчинено.','Cabinet open.'));
-  }else if(a.type==='breaker'){
-    if(!q.inv.fuse){Snd.deny();caption(bi('ГОЛОВНИЙ ЩИТ','MAIN BOARD'),bi('Гніздо запобіжника порожнє. Запасний лежить у Майстерні (B03) на верстаку.','The fuse socket is empty. A spare lies on the bench in the Workshop (B03).'));return;}
-    q.inv.fuse=false;powerOn();Snd.powerUp();
-    toast(bi('Живлення сектору B відновлено. Тепер під лампами тебе видно.','Sector B power restored. Under the lamps you can now be seen.'));
-    alertEchoes(P.pos.clone(),1);
-  }else if(a.type==='clue'){
-    if(!q.digits[a.index]){q.digits[a.index]=true;Snd.keyBeep();}
-    toast(bi('Цифра ','Digit ')+(a.index+1)+bi(' коду вузла C: ',' of the node C code: ')+q.code[a.index]);
   }else if(a.type==='relay'){
     if(a.sector>q.stage)return;
     if(a.sector<q.stage){P.battery=1;Snd.pickup();toast(bi('Ліхтар заряджено.','Flashlight recharged.'));return;}
-    if(a.sector===1&&!q.groups.B){Snd.deny();caption(bi('ВУЗОЛ B','NODE B'),bi('Вузол знеструмлений. Запобіжник шукай у Майстерні (B03), щит стоїть в Електрощитовій (B02).','The node has no power. The fuse is in the Workshop (B03), the board stands in Switchgear (B02).'));return;}
     if(questCount(a.sector)<7){caption(bi('ВУЗОЛ ','NODE ')+'ABC'[a.sector],bi('Блок ще неповний. Відсутні частини шукай тут: ','The block is incomplete. Find the missing pieces here: ')+questHint(a.sector));return;}
-    if(a.sector===2){openKeypad(a);return;}
     deliver(a);
   }
-  drawInventory();
 }
-/* ---- node C keypad ---- */
-let KEYPAD=null;
-function openKeypad(relay){
-  Game.state='keypad';unlockPointer();KEYPAD={relay,typed:''};
-  redrawScreen=keypadScreen;keypadScreen();
-}
-function keypadScreen(){
-  const q=QUEST,known=q.digits.map((d,i)=>d?q.code[i]:'·').join(' ');
-  screen(`${eyebrow(bi('ВУЗОЛ C · КОД ДОСТУПУ','NODE C · ACCESS CODE'))}
-    <h2>${bi('Введи три цифри','Enter three digits')}</h2>
-    <div class="body">${bi('Відомі цифри: ','Known digits: ')}<b>${known}</b>. ${bi('Хибний код вмикає сирену, і її чути по всьому депо.','A wrong code sets off the siren, and the whole depot hears it.')}</div>
-    <div class="kp"><div class="kpd" id="kpd"></div><div class="kpk">${'123456789'.split('').map(n=>`<button class="pill quiet" data-k="${n}">${n}</button>`).join('')}
-    <button class="pill quiet" data-k="x">⌫</button><button class="pill quiet" data-k="0">0</button><button class="pill primary" data-k="ok">OK</button></div></div>
-    <div class="cta"><button class="pill quiet" id="kpClose">${bi('Відійти','Step back')}</button></div>`,true);
-  const show=()=>{document.getElementById('kpd').textContent=(KEYPAD.typed+'___').slice(0,3).split('').join(' ');};
-  show();
-  UI.card.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>keypadPress(b.dataset.k));
-  document.getElementById('kpClose').onclick=closeKeypad;
-  KEYPAD.show=show;
-}
-function closeKeypad(){if(Game.state!=='keypad')return;KEYPAD=null;Game.state='play';hideScreen();lockPointer();}
-function keypadPress(k){
-  if(!KEYPAD)return;
-  if(k==='x'){KEYPAD.typed=KEYPAD.typed.slice(0,-1);Snd.keyBeep();}
-  else if(k==='ok'){
-    if(KEYPAD.typed.length<3){Snd.deny();return;}
-    if(KEYPAD.typed===QUEST.code.join('')){const r=KEYPAD.relay;Snd.swipe();closeKeypad();deliver(r);drawInventory();return;}
-    Snd.alarm();KEYPAD.typed='';alertEchoes(P.pos.clone(),2);
-    const d=document.getElementById('kpd');if(d){d.classList.add('bad');setTimeout(()=>d.classList.remove('bad'),700);}
-  }else if(KEYPAD.typed.length<3){KEYPAD.typed+=k;Snd.keyBeep();}
-  if(KEYPAD&&KEYPAD.show)KEYPAD.show();
-}
-addEventListener('keydown',e=>{
-  if(Game.state!=='keypad')return;
-  if(/^Digit\d$|^Numpad\d$/.test(e.code))keypadPress(e.code.slice(-1));
-  else if(e.code==='Backspace'){keypadPress('x');e.preventDefault();}
-  else if(e.code==='Enter'||e.code==='NumpadEnter')keypadPress('ok');
-  else if(e.code==='Escape')closeKeypad();
-});
 /* ---- journal ---- */
 function openJournal(){
   if(!QUEST||Game.state!=='play')return;
   Game.state='journal';unlockPointer();redrawScreen=openJournalScreen;openJournalScreen();
 }
-function questTasks(s){
-  const q=QUEST,out=[];
-  if(s===0){
-    out.push([q.inv.card||q.cabinet,bi('Картка доступу лежить у кімнаті персоналу (A05).','The access card lies in the staff room (A05).')]);
-    out.push([q.cabinet,bi('Фрагмент A02 зачинений у шафі доказів охорони.','Fragment A02 is locked in the Security evidence cabinet.')]);
-  }else if(s===1){
-    out.push([q.inv.fuse||q.groups.B,bi('Запобіжник лежить на верстаку в Майстерні (B03).','The fuse lies on the bench in the Workshop (B03).')]);
-    out.push([q.groups.B,bi('Головний щит стоїть в Електрощитовій (B02). Без струму вузол B мовчить.','The main board stands in Switchgear (B02). Without power node B stays silent.')]);
-  }else{
-    out.push([q.digits[0],bi('Перша цифра коду: дошка в Ремонтній (C02).','First code digit: the board in the Repair bay (C02).')]);
-    out.push([q.digits[1],bi('Друга цифра: записка на столі Радіовузла (C03).','Second digit: a note on the Radio room desk (C03).')]);
-    out.push([q.digits[2],bi('Третя цифра: наліпка на стійці в Серверній (C06).','Third digit: a label on a rack in the Server room (C06).')]);
-  }
-  return out;
-}
 function openJournalScreen(){
   const s=Math.min(QUEST.stage,2),count=questCount(s),known=QUEST.found.includes(s);
   screen(`${eyebrow(bi('ЖУРНАЛ КУР’ЄРА','COURIER JOURNAL'))}<h2>${'ABC'[s]} · ${labelPair(SECTOR_NAMES[s])}</h2>
   <div class="body">${DELIVERY_NOTES[LANG][s]}</div>
-  <div class="tasks">${questTasks(s).map(t=>`<div class="${t[0]?'done':''}"><span>${t[0]?'✓':'○'}</span><span>${known||t[0]?t[1]:bi('Запис ще не прочитано. Журнал зміни лежить на столі біля входу в сектор.','Not read yet. The shift log lies on the desk by the sector entrance.')}</span></div>`).join('')}</div>
   <div class="journal-list">${QUEST.rooms.filter(a=>a.sector===s).map(r=>{
     const got=SHARDS.find(a=>a.room===r).got,seen=known||QUEST.visited.has(r.id);
     return `<div><span>${got?'✓':'○'} ${r.id}</span> <span>${seen?labelPair(r.name):bi('Невідома кімната','Unexplored room')}</span><span>${got?bi('ЗІБРАНО','FOUND'):''}</span></div>`;
   }).join('')}</div>
-  <div class="note">${bi('Зелена шафа з лампою - укриття, у ній Ехо тебе не дістане. Під увімкненими лампами Ехо бачить тебе здалеку, у тіні з вимкненим ліхтарем майже не бачить. R - тримай для підзарядки; генератор шумить.','A green locker with a lamp is a shelter; Echo cannot reach you inside. Under working lamps Echo sees you from afar; in the dark with the torch off it barely does. Hold R to recharge; the generator is noisy.')}</div>
+  <div class="note">${bi('Зелена шафа з лампою: укриття, у ній Ехо тебе не дістане. Тримай R для підзарядки; генератор шумить.','A green locker with a lamp is a shelter; Echo cannot reach you inside. Hold R to recharge; the generator is noisy.')}</div>
   <div class="cta"><button class="pill primary" id="closeJournal">${bi('Повернутись','Return')} · ${count}/7</button></div>`,true);
   document.getElementById('closeJournal').onclick=()=>{Game.state='play';hideScreen();lockPointer();};
 }
@@ -4338,12 +4095,7 @@ function objectiveText(){
   const q=QUEST,s=q.stage;
   if(s===3)return bi('Пройди крізь останні двері.','Walk through the final door.');
   const n=questCount(s);
-  if(s===1&&!q.groups.B)return q.inv.fuse?bi('Встав запобіжник у щит в Електрощитовій (B02).','Fit the fuse into the board in Switchgear (B02).'):bi('Сектор B знеструмлений. Знайди запобіжник у Майстерні (B03).','Sector B has no power. Find the fuse in the Workshop (B03).');
-  if(n<7){
-    if(s===0&&n===6&&!q.cabinet)return q.inv.card?bi('Відчини карткою шафу доказів в Охороні (A02).','Open the evidence cabinet in Security (A02) with the card.'):bi('Останній фрагмент у шафі Охорони. Картка лежить у кімнаті персоналу (A05).','The last fragment is in the Security cabinet. The card is in the staff room (A05).');
-    return bi('Збери відсутні дані для вузла ','Recover missing data for node ')+'ABC'[s]+' · '+n+'/7';
-  }
-  if(s===2&&!q.digits.every(Boolean))return bi('Вузол C просить код. Цифри: Ремонтна, Радіовузол, Серверна.','Node C wants a code. Digits: Repair bay, Radio room, Server room.')+' '+q.digits.map((d,i)=>d?q.code[i]:'·').join(' ');
+  if(n<7)return bi('Збери відсутні дані для вузла ','Recover missing data for node ')+'ABC'[s]+' · '+n+'/7';
   return bi('Передай дані до вузла ','Deliver data to node ')+'ABC'[s]+bi(' біля дальніх дверей.',' by the far door.');
 }
 function updateQuest(dt,wants){
@@ -4352,7 +4104,7 @@ function updateQuest(dt,wants){
   if(room)q.visited.add(room.id);
   document.getElementById('location').textContent=room?room.id+' · '+labelPair(room.name):'0'+(s+1)+' · '+labelPair(SECTOR_NAMES[s]);
   if(!q.seenSector.has(s)){q.seenSector.add(s);sectorCard(s);}
-  setGrade(s===0?'A':s===1?(q.groups.B?'B':'Bdark'):'C');
+  setGrade('ABC'[s]);
   _fc.setHex(FOGS[s][0]);scene.fog.color.lerp(_fc,Math.min(1,dt*1.5));scene.background.copy(scene.fog.color);
   scene.fog.density+=(FOGS[s][1]-scene.fog.density)*Math.min(1,dt*1.5);
   const text=objectiveText();if(UI.objt.textContent!==text)UI.objt.textContent=text;
@@ -4372,7 +4124,7 @@ function updateQuest(dt,wants){
     consider(a,a.aim,a);
   }
   for(const sh of SHARDS){
-    if(sh.got||sh.locked){if(sh.marker)sh.marker.visible=false;continue;}
+    if(sh.got){if(sh.marker)sh.marker.visible=false;continue;}
     consider(sh,sh.aim,{type:'shard',ref:sh,marker:sh.marker});
   }
   if(q.current&&q.current.marker){q.current.marker.material.opacity=1;const m=q.current.marker;m.scale.multiplyScalar(1.5);}
@@ -4384,12 +4136,6 @@ function updateQuest(dt,wants){
     p.textContent=bi('ПІДЗАРЯДКА · генератор шумить','RECHARGING · generator is noisy');p.classList.add('visible');
     if(q.charge>.65){Snd.tone(110,.1,'triangle',.025,75);q.charge=0;}
   }else q.charge=0;
-  /* visibility: lamp light on the body, or the torch itself */
-  q.litClock-=dt;if(q.litClock<=0){q.litClock=.2;q.lit=HIDE.active?0:lightAt(P.pos);}
-  const seen=!HIDE.active&&(q.lit>.38||(P.lampOn&&lamp.intensity>.4));
-  const vis=document.getElementById('vis');
-  vis.textContent=HIDE.active?bi('В УКРИТТІ','IN SHELTER'):q.lit>.38?bi('НА СВІТЛІ','IN THE LIGHT'):P.lampOn&&lamp.intensity>.4?bi('ЛІХТАР ВИДНО','TORCH VISIBLE'):bi('У ТІНІ','IN SHADOW');
-  vis.className=HIDE.active?'safe':seen?'seen':'dark';
   document.getElementById('lampStatus').textContent=Math.round(P.battery*100)+'% · '+(P.lampOn?bi('СВІТЛО','ON'):bi('ВИМКНЕНО','OFF'));
   /* compass: the nearest shelter while something hunts you */
   const mark=document.getElementById('cmark'),cd=document.getElementById('cdist');
@@ -4405,8 +4151,7 @@ function updateQuest(dt,wants){
   for(const h of HIDE.spots)h.beacon.material.opacity=hunted?.35+.25*Math.sin(Game.time*5):0;
   /* ambience */
   let steam=0;for(const sp of q.steam){const d=sp.distanceTo(P.pos);if(d<14)steam=Math.max(steam,(1-d/14)*(1-d/14)*.05);}
-  Snd.amb(steam,s===1?(q.groups.B?.016:0):s===2?.008:.004);
-  drawInventory();
+  Snd.amb(steam,s===1?.016:s===2?.008:.004);
 }
 function animateShards(dt){
   SHARDS.forEach((s,i)=>{
@@ -4436,36 +4181,14 @@ function resumeCheckpoint(){
   q.stage=saved.stage;q.found=saved.found.slice();
   SHARDS.forEach((a,i)=>{a.got=saved.got[i];a.g.visible=!a.got;});
   q.gates.forEach((d,i)=>{if(i<saved.stage)openQuestDoor(d,true);});
-  if(saved.inv){
-    q.inv=Object.assign({},saved.inv);q.code=saved.code.slice();q.digits=saved.digits.slice();q.taken=saved.taken.slice();
-    for(const a of q.items)if(a.id&&q.taken.includes(a.id)){a.taken=true;a.g.visible=false;}
-    for(let i=0;i<3;i++)clueTex(i);
-    if(saved.cabinet)openCabinet(true);
-    if(saved.power)powerOn(true);
-  }
   for(let i=0;i<3;i++){q.seenSector.add(i);drawRelay(i);}
   q.seenSector.delete(Math.min(saved.stage,2));
   P.pos.set(-23+Math.min(saved.stage,2)*92,0,0);Game.runTime=saved.runTime;P.battery=1;Nav.build(level.bounds,.5);updatePips();
   if(saved.stage===3)exitOpened=true;
-  drawInventory();
 }
-/* ---- texts that describe the new rules ---- */
-Object.assign(STR.ua,{
-  dRow1:'Echo бачить ліхтар і бачить тебе під лампами, чує біг і генератор. У тіні з вимкненим світлом воно майже сліпе.',
-  dRow2:'Зелена шафа з лампою - укриття, у ній Echo тебе не дістане. Останній вузол, якому ти передав дані, зберігає прогрес.'});
-Object.assign(STR.en,{
-  dRow1:'Echo sees the torch and sees you under lamps; it hears running and the generator. In the dark with the light off it is nearly blind.',
-  dRow2:'A green locker with a lamp is a shelter; Echo cannot reach you inside. The last node you delivered to keeps your progress.'});
-DELIVERY_NOTES.ua=[
-  'Журнал зміни, сектор A. Сім частин блока розкидані по кімнатах платформи. Одну охорона замкнула в шафі доказів, а картка доступу лишилась у кімнаті персоналу. Збери все й передай через термінал біля дальніх дверей.',
-  'Журнал зміни, сектор B. Живлення вимкнули вручну, щоб лампи не приваблювали Echo. Запасний запобіжник лежить у Майстерні, головний щит стоїть в Електрощитовій. Без струму вузол B не прийме дані. Зі світлом тебе видно здалеку.',
-  'Журнал зміни, сектор C. Вузол C зачинили кодом із трьох цифр. Першу записали на дошці в Ремонтній, другу на папірці в Радіовузлі, третю наклеїли на стійку в Серверній. Хибний код вмикає сирену. За виходом та сама задача працює інакше: Optimum відновлює дані з кодованих частин.'];
-DELIVERY_NOTES.en=[
-  'Shift log, sector A. Seven pieces of the block are scattered through the platform rooms. Security locked one in the evidence cabinet, and the access card stayed in the staff room. Collect them all and deliver through the terminal by the far doors.',
-  'Shift log, sector B. The power was cut by hand so the lamps would stop drawing Echo. A spare fuse lies in the Workshop, the main board stands in Switchgear. Without power node B will not take the data. With the lights on you can be seen from afar.',
-  'Shift log, sector C. Node C was locked with a three digit code. The first digit is on the board in the Repair bay, the second on a note in the Radio room, the third on a rack label in the Server room. A wrong code sets off the siren. Beyond the exit the same job works differently: Optimum rebuilds data from coded pieces.'];
-STR.ua.bfR1b='Ліхтар, увімкнені лампи й шум видають тебе. Ховайся в зелених шафах-укриттях і тримайся тіні.';
-STR.en.bfR1b='Your torch, working lamps and noise reveal you. Hide in the green shelter lockers and keep to the dark.';
+/* ---- shelter hint on the death screen ---- */
+STR.ua.dRow2='Зелена шафа з лампою: укриття, у ній Echo тебе не дістане. Останній вузол, якому ти передав дані, зберігає прогрес.';
+STR.en.dRow2='A green locker with a lamp is a shelter; Echo cannot reach you inside. The last node you delivered to keeps your progress.';
 
 function fragmentApproach(target){
   // A pickup may sit next to furniture: route to an unobstructed interaction position.
@@ -5812,7 +5535,7 @@ function buildWorld(l){
   seen=level.map?new Uint8Array(level.map.W*level.map.H):null;
   miniEl.style.display='none';
   pips(level.total,level.coded);updatePips();
-  for(const id of ['location','interact','lampStatus','vis','inv','bcharge','bjournal','binteract'])document.getElementById(id).style.display=level.metro?'':'none';
+  for(const id of ['location','interact','lampStatus','bcharge','bjournal','binteract'])document.getElementById(id).style.display=level.metro?'':'none';
   if(level.meadow){
     scene.fog.color.setHex(0x99bcb4);scene.fog.density=0.0062;
     scene.background.setHex(0x99bcb4);
@@ -5832,7 +5555,7 @@ function buildWorld(l){
     groundFn=()=>0;
     setPool(true);scene.environment=ENV.metro;setGrade('A',true);
     camera.far=78;camera.updateProjectionMatrix(); // fog hides everything well before this
-    document.body.classList.add('metro');drawInventory();
+    document.body.classList.add('metro');
   }
 }
 
@@ -6324,7 +6047,7 @@ function chooseEchoSearch(e){
 function updateEcho(e,dt){
   const pos=e.g.position;
   const d=pos.distanceTo(P.pos);
-  const canSee=!HIDE.active&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8)||(d<9&&QUEST&&QUEST.lit>.38));
+  const canSee=!HIDE.active&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8));
 
   if(canSee){
     if(e.state!=='hunt'){e.state='hunt';e.repath=0;Snd.monsterCall(pos);}
