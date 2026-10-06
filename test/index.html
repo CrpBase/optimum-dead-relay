@@ -1535,8 +1535,6 @@ function buildEnvMaps(){
     ENV.metro=bake(s=>{
       const room=new THREE.Mesh(new THREE.BoxGeometry(30,9,30),new THREE.MeshBasicMaterial({color:0x000000,side:THREE.BackSide}));
       room.material.color.setRGB(.0016,.0019,.0022);s.add(room);
-      glow(s,5,.1,.5,0,4.3,-6,1.5,1.7,1.9);glow(s,5,.1,.5,0,4.3,7,1.2,1.4,1.6);
-      glow(s,.5,.1,4,-9,4.3,0,1.3,1.2,1.0);glow(s,.4,1.6,1.0,13,1.8,3,.5,.75,.6);
     });
     ENV.meadow=bake(s=>{
       const g=new THREE.SphereGeometry(40,24,16),col=[];
@@ -2484,9 +2482,10 @@ function decal(name,x,y,z,face,w,h,soft,spin){
   bquad(g?M.decalGlow:(soft?M.decalSoft:M.decal),x,y,z,face,w,h,r,spin);
 }
 
-/* ---------------- fixtures: many lamps, a handful of real lights ----------------
-   Every lamp in the level is a visible fixture with its own glow. Only the few nearest ones
-   get a real light from a small fixed pool, so the frame cost stays flat however long the station is. */
+/* ---------------- glow points ----------------
+   The station has no working lamps: the torch is the only thing that lights it.
+   A few objects glow on their own (node terminals, shelter markers, the exit); the nearest of them
+   borrow a real light from a small fixed pool. */
 let FIX=[];
 const POOL=[];
 for(let i=0;i<QLIGHTS[QUAL];i++){
@@ -2753,7 +2752,6 @@ function posterBox(g,index,lit,w,y){
   const p=POSTERS[index%POSTERS.length];
   g.b(lit?M.pDark:M.steel,w+.1,h+.1,lit?.1:.03,0,y-.05,lit?.05:.015);
   g.q(lit?p.lit:p.paper,0,y+h/2,lit?.102:.032,'f',w,h);
-  if(lit)g.light({x:0,y:y+h/2,z:1.0,kind:'white',i:.42,r:4.6,mode:4,drop:0,soft:true});
 }
 
 /* ---------------- local frames ----------------
@@ -2807,84 +2805,12 @@ function geoCache(){
   GEO.dome=new THREE.SphereGeometry(1,14,6,0,Math.PI*2,0,Math.PI/2).toNonIndexed();
 }
 
-/* ---------------- lamps ---------------- */
-// Fluorescent batten under a ceiling. along: 'x' or 'z' in local terms. state: 0 lit, 1 nervous, 2 dying, -1 dead.
-function lampTube(g,x,y,z,along,kind,state,opt){
-  opt=opt||{};
-  const w=along==='x'?1.34:.2,d=along==='x'?.2:1.34;
-  g.b(M.pGray,w,.07,d,x,y-.07,z);
-  if(opt.rods){g.b(M.pDark,.03,opt.rods,.03,x+(along==='x'?.5:0),y,z+(along==='x'?0:.5));g.b(M.pDark,.03,opt.rods,.03,x-(along==='x'?.5:0),y,z-(along==='x'?0:.5));}
-  const tw=along==='x'?1.2:.045,td=along==='x'?.045:1.2;
-  if(state<0){for(const o of [-.045,.045])g.b(M.tubeOff,tw,.04,td,x+(along==='x'?0:o),y-.115,z+(along==='x'?o:0));return null;}
-  const steady=state===0;
-  let mesh=null;
-  if(steady){for(const o of [-.045,.045])g.b(M.tube[kind],tw,.04,td,x+(along==='x'?0:o),y-.115,z+(along==='x'?o:0));}
-  else{
-    const worldX=(along==='x')===g.alongX;
-    mesh=new THREE.Mesh(new THREE.BoxGeometry(worldX?1.2:.14,.04,worldX?.14:1.2),glowMat(kind));
-    mesh.position.set(g.wx(x,z),g.y0+y-.115,g.wz(x,z));world.add(mesh);
-  }
-  const f=g.light({x,y:y-.1,z,kind,i:opt.i||1.5,r:opt.r||10,mode:state>0?state:0,mesh});
-  if(steady&&opt.pool!==false)floorPool(g.wx(x,z),g.wz(x,z),kind,opt.poolR||3.4,opt.poolA||.5);
-  return f;
-}
-// Caged bulkhead lamp on a wall. dir is the way it faces.
-function lampBulk(g,x,y,z,dir,kind,state,opt){
-  opt=opt||{};
-  const n=dir==='f'?[0,1]:dir==='b'?[0,-1]:dir==='r'?[1,0]:[-1,0];
-  g.b(M.pDark,dir==='f'||dir==='b'?.24:.1,.3,dir==='f'||dir==='b'?.1:.24,x+n[0]*.05,y-.15,z+n[1]*.05);
-  const px=x+n[0]*.16,pz=z+n[1]*.16;
-  const lit=state>=0;
-  let mesh=null;
-  if(lit&&state===0)g.g(M.tube[kind],GEO.ball,px,y,pz,0,0,0,.085);
-  else if(lit){mesh=new THREE.Mesh(new THREE.SphereGeometry(.085,10,8),glowMat(kind));mesh.position.set(g.wx(px,pz),y,g.wz(px,pz));world.add(mesh);}
-  else g.g(M.tubeOff,GEO.ball,px,y,pz,0,0,0,.085);
-  g.c(M.pDark,.105,.02,px,y+.09,pz,'y',8,undefined,false);g.c(M.pDark,.105,.02,px,y-.09,pz,'y',8,undefined,false);g.c(M.pDark,.105,.02,px,y,pz,'y',8,undefined,false);
-  if(!lit)return null;
-  return g.light({x:px+n[0]*.35,y:y+.2,z:pz+n[1]*.35,kind,i:opt.i||1.0,r:opt.r||7,mode:state,mesh,drop:.2});
-}
-// Industrial pendant dome.
-function lampBay(g,x,y,z,kind,state,opt){
-  opt=opt||{};
-  g.b(M.pDark,.03,4.5-y,.03,x,y,z);
-  g.c(M.pGray,.1,.26,x,y-.02,z,'y',10,.34);
-  if(state<0){g.c(M.tubeOff,.2,.03,x,y-.16,z,'y',10);return null;}
-  let mesh=null;
-  if(state===0)g.c(M.tube[kind],.22,.03,x,y-.16,z,'y',12);
-  else{mesh=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.03,12),glowMat(kind));mesh.position.set(g.wx(x,z),y-.16,g.wz(x,z));world.add(mesh);}
-  const f=g.light({x,y:y-.2,z,kind,i:opt.i||1.9,r:opt.r||11,mode:state,mesh});
-  if(state===0)floorPool(g.wx(x,z),g.wz(x,z),kind,opt.poolR||3.6,.55);
-  return f;
-}
-// Recessed ceiling panel for suspended ceilings.
-function lampPanel(g,x,y,z,kind,state,opt){
-  opt=opt||{};
-  g.b(M.pGray,.62,.03,.62,x,y-.03,z);
-  if(state<0){g.b(M.tubeOff,.54,.012,.54,x,y-.04,z);return null;}
-  let mesh=null;
-  if(state===0)g.b(M.tube[kind],.54,.012,.54,x,y-.042,z);
-  else{mesh=new THREE.Mesh(new THREE.BoxGeometry(.54,.012,.54),glowMat(kind));mesh.position.set(g.wx(x,z),y-.036,g.wz(x,z));world.add(mesh);}
-  const f=g.light({x,y:y-.1,z,kind,i:opt.i||1.2,r:opt.r||8,mode:state,mesh});
-  if(state===0)floorPool(g.wx(x,z),g.wz(x,z),kind,2.6,.42);
-  return f;
-}
-function floorPool(x,z,kind,r,a){
-  const m=M.pool[kind];if(!m)return;
-  bquad(m,x,.02,z,'up',r*2,r*2);
-}
-
 /* ---------------- furniture and machines ----------------
    Each piece sits with its back at z=0 and grows forward, so it can be pushed against any wall. */
 const PR={
   crt(g,screen,glowKind){
     g.b(M.pCream,.44,.36,.4,0,0,.22);g.b(M.pDark,.36,.28,.02,0,.04,.425);
     g.d(screen||'crt_term',0,.18,.44,'f',.33,.25);
-    if(glowKind)g.light({x:0,y:.4,z:.9,kind:glowKind,i:.5,r:4,mode:4,drop:0,soft:true});
-  },
-  deskLamp(g,on){
-    g.c(M.pDark,.08,.02,0,.01,0,'y',10);g.b(M.pDark,.02,.34,.02,0,.02,0);g.b(M.pDark,.02,.02,.2,0,.36,.09);
-    g.c(M.pGreen,.05,.1,0,.34,.2,'y',10,.11);
-    if(on){g.c(M.tube.warm,.07,.01,0,.285,.2,'y',10);return g.light({x:0,y:.36,z:.2,kind:'warm',i:.9,r:4.2,drop:.1});}
   },
   desk(g,o){
     o=o||{};
@@ -2894,7 +2820,6 @@ const PR={
     g.col(1.5,.72,0,.36,0,.8);
     if(o.crt)PR.crt(g.at(.22,.02,0).lift(.78),o.crt,o.glow);
     if(o.kb)g.d('keyboard',.22,.782,.56,'u',.42,.15);
-    if(o.lamp!==undefined)PR.deskLamp(g.at(-.52,.18,0).lift(.78),o.lamp);
     if(o.paper)g.d('paper',.56,.782,.5,'u',.2,.26,false,.3);
     if(o.phone)g.d('phone',-.5,.782,.56,'u',.2,.2);
   },
@@ -3041,7 +2966,6 @@ const PR={
   },
   vending(g){
     g.b(M.pDark,.92,1.92,.76,0,.03,.38);g.d('vend',0,.99,.762,'f',.86,1.47);
-    g.light({x:0,y:1.3,z:1.4,kind:'blue',i:1.1,r:6.5,mode:4,drop:0});
     g.col(.92,.76,0,.38,0,1.95);
   },
   bin(g){g.c(M.pGreen,.2,.62,0,.31,.22,'y',12,.24);g.c(M.pDark,.25,.03,0,.63,.22,'y',12);g.col(.44,.44,0,.22,0,.66);},
@@ -3217,7 +3141,7 @@ function hideAt(g){
   g.col(W,.05,0,.025,0,H);g.col(.05,D,-W/2+.025,D/2,0,H);g.col(.05,D,W/2-.025,D/2,0,H);
   g.d('hide',-W/2-.002,1.25,D/2,'l',.62,.775);g.d('hide',W/2+.002,1.25,D/2,'r',.62,.775);
   g.d('hide_floor',0,.012,D+.8,'u',1.25,1.25,true);
-  // green refuge lamp: the one colour in the station that always means safe
+  // green refuge marker: the one colour in the station that always means safe
   g.b(M.pDark,.2,.07,.2,0,H+.06,D-.2);g.g(M.tube.green,GEO.ball,0,H+.2,D-.2,0,0,0,.085);
   g.light({x:0,y:H+.25,z:D+.5,kind:'green',i:.7,r:5,drop:0,soft:true});
   const door=new THREE.Group();
@@ -3269,16 +3193,13 @@ function trainCar(g,len,opt){
     const x=e*(len/2-.04);
     g.b(M.pTrain,.08,1.04,W,x,y0+.12,1.35);g.b(M.pTrain,.08,.34,W,x,y0+2.0,1.35);
     g.b(M.glassDark,.03,.86,W-.5,x,y0+1.15,1.35);g.b(M.pTrain,.08,.86,.26,x,y0+1.15,1.35-W/2+.13);g.b(M.pTrain,.08,.86,.26,x,y0+1.15,1.35+W/2-.13);
-    for(const s of [-1,1])g.c(e>0&&opt.lights?M.tube.warm:M.tubeOff,.11,.05,x+e*.04,y0+.5,1.35+s*.85,'x',10);
+    for(const s of [-1,1])g.c(M.tubeOff,.11,.05,x+e*.04,y0+.5,1.35+s*.85,'x',10);
     g.b(M.pDark,.1,.22,1.3,x+e*.02,y0+2.04,1.35);
     g.b(M.pDark,.3,.2,.3,x+e*.2,y0-.2,1.35);
   }
-  // inside: benches, rails, one light that will not quite die
+  // inside: benches and rails
   for(const s of [-1,1]){g.b(M.pBrown,len-2.4,.4,.44,0,y0+.04,1.35+s*.98);g.c(M.steel,.018,len-2,0,y0+1.95,1.35+s*.55,'x',6);}
   for(let x=-len/2+2;x<len/2-1;x+=2.4)g.c(M.steel,.02,2.1,x,y0+1.1,1.35,'y',6);
-  const tube=new THREE.Mesh(new THREE.BoxGeometry(g.alongX?1.6:.1,.04,g.alongX?.1:1.6),glowMat('cool'));
-  tube.position.set(g.wx(len*.18,1.35),y0+2.26,g.wz(len*.18,1.35));world.add(tube);
-  g.light({x:len*.18,y:y0+2.2,z:1.35,kind:'cool',i:1.1,r:6.5,mode:2,mesh:tube,drop:.1});
   for(let i=0;i<2;i++)g.d('num'+((3+i*4)%10),-len/2+.6+i*.26,y0+.62,1.35+W/2+.004,'f',.2,.27);
   g.col(len,W,0,1.35,0,y0+2.6);
 }
@@ -3292,10 +3213,8 @@ function buildGate(x,s){
   bbox(M.pYellow,.5,.02,6.7,x,.01,0,0);
   decal('sector_'+'ABC'[s+1],x-.31,3.95,0,-Math.PI/2,2.9);
   decal('noentry',x-.31,2.0,-3.62,-Math.PI/2,.4);
-  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),glowMat('red'));lamp.position.set(x-.36,3.1,2.9);world.add(lamp);
-  const fx=addFixture({x:x-.8,y:3.1,z:2.9,kind:'red',i:.8,r:6,mode:3,mesh:lamp,drop:0,soft:true});
   const col={x0:x-.14,x1:x+.14,z0:-3.4,z1:3.4,y0:0,y1:3.3};COL.push(col);
-  const d={panel,col,from:panel.position.clone(),final:false,progress:0,opening:false,lamp,fx};
+  const d={panel,col,from:panel.position.clone(),final:false,progress:0,opening:false};
   TICK.push(dt=>{
     if(!d.opening||d.progress>=1)return;
     const before=d.progress;d.progress=Math.min(1,d.progress+dt/2.4);
@@ -3306,7 +3225,6 @@ function buildGate(x,s){
 }
 function openQuestDoor(d,instant){
   d.opening=true;
-  if(d.fx){d.fx.kind='green';d.fx.col=LAMPCOL.green;d.fx.hdr=LAMPHDR.green;d.fx.mode=0;}
   if(instant){
     d.progress=1;d.col.y0=-999;d.col.y1=-998;
     if(d.final){for(const {leaf,side}of d.leaves)leaf.position.z=side*2.84;d.seam.visible=false;d.beyond.i=3.2;}else d.panel.position.y=3.15;
@@ -3509,14 +3427,11 @@ function nodeRoom(c,letter){
   core.c(M.pGray,.62,.22,0,.11,.5,'y',8);core.c(M.pGray,.3,h-2.9,0,2.9+(h-2.9)/2,.5,'y',8);
   for(let k=0;k<8;k++){const a=k*Math.PI/4+.39;core.d('led_r',Math.sin(a)*.5,1.55,.5+Math.cos(a)*.5,k<2||k>5?'f':'b',.05,.05);}
   core.col(1.1,1.1,0,.5,0,3);
-  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),glowMat('red'));lamp.position.copy(core.p(.62,.5,2.5));world.add(lamp);
-  core.light({x:.9,y:2.5,z:.5,kind:'red',i:.9,r:6.5,mode:3,mesh:lamp,drop:0,soft:true});
   for(const [u0,v0,len,ax] of [[1.0,2.9,2.2,'x'],[3.7,5.6,5.2,'x'],[3.1,6.2,3.4,'z']])g.c(M.rub,.035,len,u0+(ax==='x'?len/2:0),.04,v0+(ax==='z'?len/2:0),ax,6);
   PR.table(F(W-1.0),.9,.6,M.steel);PR.crt(F(W-1.0).at(0,.1,0).lift(.76),'crt_term','green');
   g.d('big'+letter,W/2,2.3,11.883,'b',1.7,2.04,true);
   g.d('grate',6.6,.012,3.2,'u',1.6,.42);
   PR.boxes(B(7.6),4);
-  lampTube(g,6.4,h,5.8,'z','cool',1,{i:1.2,r:9});
   c.frag(4.05,6.1,.9,5.0,6.2);
   // bracket that holds the fragment case on the core
   core.b(M.steel,.5,.04,.36,.95,.86,.5);
@@ -3537,14 +3452,12 @@ const ROOMS={
     PR.shelf(R(5.6),1.6,2.2,'boxes');
     PR.filing(B(3.0),3);PR.boxes(B(10.6),5);
     g.d('calendar',.117,1.75,5.0,'r',.3,.4);g.d('clock',2.0,2.75,.117,'f',.34,.34);
-    lampPanel(g,3.2,h,2.2,'cool',1);lampPanel(g,10.6,h,6.0,'warm',0,{i:1.0});lampPanel(g,7,h,9.8,'cool',-1);
     c.patrol(10.4,6.6);c.litter(4);
   },
   A02(c){ // security
     const {g,W,h,F,B,L,R}=c;
     PR.console(R(4.6),3.2,['crt_cam','crt_static','crt_cam','crt_cam','crt_static']);PR.chair(g.at(12.5,4.6,1));
     g.b(M.pDark,.08,1.26,2.5,W-.15,1.5,4.6);g.d('monwall',W-.19,2.13,4.6,'l',2.4,1.2);
-    g.light({x:W-1.3,y:1.9,z:4.6,kind:'blue',i:.9,r:6,mode:4,drop:0,soft:true});
     // open evidence rack, the fragment sits on the middle shelf
     const ev=L(5.4);
     ev.b(M.pGray,1.2,2.0,.05,0,0,.025);ev.b(M.pGray,.05,2.0,.6,-.575,0,.3);ev.b(M.pGray,.05,2.0,.6,.575,0,.3);
@@ -3558,7 +3471,6 @@ const ROOMS={
     PR.table(g.at(7.0,5.3,0),1.4,.8);g.d('news',6.8,.763,5.7,'u',.3,.4,false,.4);g.d('phone',7.4,.763,5.75,'u',.2,.2);
     PR.chair(g.at(7.0,6.2,0));PR.chair(g.at(6.0,5.4,3));
     PR.filing(B(11.0),2);g.d('cctv',12.6,1.9,.117,'f',.34,.34);g.d('board',9.2,1.75,11.883,'b',1.2,.8);
-    lampPanel(g,7,h,4.2,'cool',0,{i:.85});lampPanel(g,3,h,7.0,'cool',-1);lampPanel(g,10.5,h,9.6,'cool',2);
     c.patrol(9.6,6.9);c.litter(3);
   },
   A03(c){ // lost property
@@ -3573,20 +3485,18 @@ const ROOMS={
     PR.suitcases(g.at(7.7,6.3,0),4);PR.suitcases(F(2.4),3);PR.suitcases(F(1.4),2);
     PR.shelf(B(7.0),2.0,2.0,'bags');
     posterBox(F(9.6),1,false,1.1,.8);g.d('board',2.2,1.9,.117,'f',1.1,.73);
-    lampPanel(g,6.6,h,3.0,'warm',2);lampPanel(g,6.6,h,7.0,'warm',0,{i:.95});lampPanel(g,12,h,9.6,'cool',-1);
     c.patrol(7.4,7.6);c.litter(5);
   },
   A04(c){ // archive
     const {g,W,h,F,B,L,R}=c;
     for(const u of [10.2,11.9]){PR.shelf(g.at(u,3.0,0),1.6,2.3,'binders');PR.shelf(g.at(u,6.3,2),1.6,2.3,'binders');}
-    PR.desk(L(4.4),{lamp:true,paper:true});PR.chair(g.at(1.25,4.4,3));
+    PR.desk(L(4.4),{paper:true});PR.chair(g.at(1.25,4.4,3));
     PR.filing(F(1.9),4);PR.boxes(g.at(2.4,6.6,0),6);
     PR.cabinet(L(6.9),1.2,1.3,.5,M.wood,'drawers');
     PR.table(g.at(6.4,4.7,0),1.3,.7);g.d('paper',6.9,.763,5.0,'u',.2,.26,false,.5);g.d('paper',6.75,.764,5.15,'u',.2,.26,false,-.2);
     c.frag(6.2,5.05,.76);
     PR.shelf(F(12.4),1.6,2.2,'binders');g.d('board',9.6,1.8,.117,'f',1.1,.73);
     PR.shelf(B(4.5),2.0,2.0,'boxes');PR.shelf(B(10.0),2.0,2.0,'binders');
-    lampPanel(g,7,h,6.0,'cool',-1);lampPanel(g,10.8,h,2.0,'cool',1,{i:1.0});lampPanel(g,4,h,9.8,'cool',-1);
     c.patrol(7.9,7.4);c.litter(7);
   },
   A05(c){ // staff room
@@ -3602,7 +3512,6 @@ const ROOMS={
     g.d('calendar',W-.117,1.8,7.6,'l',.3,.4);g.d('clock',.117,2.4,5.6,'r',.34,.34);g.d('board',.117,1.8,6.6,'r',1.1,.73);
     PR.lockers(B(3.0),3,M.pGreen);PR.bench(B(9.6));
     posterBox(R(1.6),9,false,1.0,.85);
-    lampPanel(g,7,h,4.6,'warm',0,{i:1.0});lampPanel(g,3,h,7.2,'cool',-1);lampPanel(g,11,h,9.6,'cool',1);
     c.patrol(9.6,6.9);c.litter(3);
   },
   A06(c){ // signal room
@@ -3610,7 +3519,6 @@ const ROOMS={
     g.b(M.pDark,3.6,.5,.5,7,0,5.25);g.col(3.6,.5,7,5.25,0,1.3);
     for(let i=0;i<8;i++){const u=5.45+i*.44;g.b(M.steel,.05,1.1,.05,u,.5,5.25,false);g.b(i%3?M.pRed:M.pBlue,.07,.22,.07,u,1.56,5.25);g.d('levers',u,.3,5.503,'f',.2,.2);}
     g.b(M.pDark,.08,1.5,3.5,.15,1.3,4.6);g.d('track',.196,2.05,4.6,'r',3.3,1.26);
-    g.light({x:1.4,y:2.0,z:4.6,kind:'green',i:.85,r:6,mode:4,drop:0,soft:true});
     PR.console(L(4.6),1.9,['crt_wave','crt_term','crt_wave']);
     for(const v of [3.4,4.3,5.2])PR.elecCab(R(v),.8,true);
     PR.desk(F(10.8),{phone:true,paper:true});PR.chair(g.at(10.8,1.2,0));
@@ -3618,7 +3526,6 @@ const ROOMS={
     hideAt(F(1.8));
     g.d('clock',9.4,2.6,.117,'f',.34,.34);g.d('hv',W-.117,2.4,4.3,'l',.3,.27);
     PR.filing(B(4.0),2);PR.shelf(B(9.5),1.8,2.0,'boxes');
-    lampPanel(g,7,h,3.0,'cool',1,{i:1.0});lampPanel(g,10.5,h,7.0,'cool',-1);lampPanel(g,3.6,h,9.8,'cool',-1);
     c.patrol(9.9,7.1);c.litter(3);
   },
   A07(c){nodeRoom(c,'A');},
@@ -3635,8 +3542,7 @@ const ROOMS={
     PR.crate(g.at(11.9,4.2,0),.7,true);c.frag(11.9,4.55,.57);
     g.d('warn',.117,2.5,3.0,'r',.34,.31);g.d('gauge',W-.117,1.7,3.6,'l',.24,.24);
     PR.pallet(B(4.0),'sacks');PR.barrel(B(9.0),M.pGray);
-    lampBulk(g,.11,2.7,3.0,'r','warm',0,{i:1.2,r:8});lampBulk(g,W-.11,2.7,8.0,'l','warm',0,{i:1.2,r:8});
-    lampBulk(g,5.0,3.3,.16,'f','red',3,{i:.55,r:5.5});
+    
     c.patrol(8.0,7.4);c.litter(1);
   },
   B02(c){ // switchgear
@@ -3657,8 +3563,7 @@ const ROOMS={
     PR.firePoint(F(9.2));g.d('skull',11.4,1.8,.117,'f',.9,.53);
     PR.table(g.at(10.4,6.6,0),1.0,.6,M.steel);c.frag(10.4,6.9,.76);
     PR.cabinet(B(4.0),1.4,1.9,.5,M.pGray,'cabdoor');
-    lampBulk(g,.11,2.9,7.2,'r','warm',0,{i:1.1,r:8});lampBulk(g,W-.11,2.9,2.2,'l','warm',0,{i:1.1,r:8});
-    lampBulk(g,W-.11,2.6,6.4,'l','red',3,{i:.6,r:6});
+    
     c.patrol(9.6,5.0);c.litter(2);
   },
   B03(c){ // workshop
@@ -3674,8 +3579,7 @@ const ROOMS={
     for(const [m,x] of [[M.pBlue,-.14],[M.pOrange,.14]]){const w=B(11.4);w.c(m,.11,1.3,x,.7,.2,'y',10);w.c(M.steel,.04,.12,x,1.4,.2,'y',6);}
     PR.table(g.at(7.2,4.8,0),1.6,.9,M.steel);g.d('paper',7.7,.763,5.2,'u',.2,.26,false,.3);c.frag(7.0,5.25,.76);
     g.d('warn',9.3,2.2,.117,'f',.34,.31);posterBox(F(11.6),10,false,1.0,.9);
-    lampBulk(g,.11,2.9,1.6,'r','warm',0,{i:1.2,r:8});lampBulk(g,W-.11,2.9,7.9,'l','warm',0,{i:1.2,r:8});
-    lampBulk(g,5.0,3.3,.16,'f','red',3,{i:.5,r:5.5});
+    
     c.patrol(10.2,7.0);c.litter(3);
   },
   B04(c){ // cable storage
@@ -3687,7 +3591,6 @@ const ROOMS={
     PR.crate(F(2.2),.8,true);PR.crate(F(1.2),.6);
     PR.shelf(B(7.0),2.0,2.0,'cables');
     g.c(M.rub,.04,5,6,.045,2.6,'x',6);g.c(M.pOrange,.03,4,9,.035,7.4,'x',6);
-    lampBulk(g,.11,3.0,7.2,'r','warm',0,{i:1.1,r:8});lampBulk(g,W-.11,3.0,1.8,'l','warm',0,{i:1.1,r:8});
     c.patrol(6.9,7.5);c.litter(2);
   },
   B05(c){ // pump room
@@ -3701,22 +3604,19 @@ const ROOMS={
     PR.table(g.at(12.4,4.0,0),1.0,.6,M.steel);c.frag(12.4,4.3,.76);
     PR.bucket(F(9.2));g.d('grate',6.0,.012,7.0,'u',1.8,.47);g.d('manhole',3.4,.012,6.6,'u',.9,.9);g.d('warn',.117,2.6,2.6,'r',.34,.31);
     for(const [u,v,r] of [[4.6,3.0,1.1],[8.4,6.8,1.3],[11.5,2.2,.8]]){const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),M.puddle);m.rotation.x=-Math.PI/2;m.position.copy(g.p(u,v,.014));m.renderOrder=2;world.add(m);}
-    lampBulk(g,.11,2.9,7.4,'r','warm',0,{i:1.1,r:8});lampBulk(g,W-.11,2.9,3.0,'l','warm',0,{i:1.1,r:8});
-    lampBulk(g,5.0,3.3,.16,'f','red',3,{i:.5,r:5.5});
+    
     c.patrol(8.2,7.6);
   },
   B06(c){ // control room
     const {g,W,h,F,B,L,R}=c;
     PR.console(L(4.6),3.2,['crt_term','crt_wave','crt_static','crt_cam','crt_term']);PR.chair(g.at(1.5,4.0,3));PR.chair(g.at(1.5,5.4,3));
     g.b(M.pDark,.08,1.4,3.4,.15,1.45,4.6);g.d('track',.196,2.15,4.6,'r',3.2,1.22);
-    g.light({x:1.5,y:2.0,z:4.6,kind:'green',i:.8,r:6,mode:4,drop:0,soft:true});
     PR.console(R(4.8),2.6,['crt_static','crt_term','crt_wave','crt_cam']);PR.chair(g.at(12.4,4.8,1));
     PR.table(g.at(7.0,4.7,0),1.8,.9);g.d('map',7.1,.763,5.15,'u',.9,.54,false,.1);g.d('phone',6.3,.763,4.95,'u',.2,.2);
     c.frag(7.7,5.3,.76);
     hideAt(F(1.8));PR.lockers(F(11.0),4,M.pGray);
     g.d('clock',9.4,2.6,.117,'f',.34,.34);g.d('board',10.2,1.8,11.883,'b',1.2,.8);
     PR.filing(B(3.6),3);
-    lampPanel(g,7,h,5.0,'cool',1,{i:.9});lampPanel(g,3.4,h,9.6,'cool',-1);
     c.patrol(9.7,7.0);c.litter(3);
   },
   B07(c){nodeRoom(c,'B');},
@@ -3731,7 +3631,6 @@ const ROOMS={
     hideAt(R(2.5));
     PR.crate(g.at(3.5,5.0,0),.8,true);c.frag(3.5,5.4,.65);
     PR.barrel(B(3.5),M.pGray);PR.barrel(B(4.3),M.pBlue);PR.pallet(B(10.0),'sacks');
-    lampTube(g,5,h,6.0,'x','cool',0,{i:1.2,r:9,rods:.5});lampTube(g,10.6,h,3.4,'x','cool',2,{rods:.5});
     c.patrol(9.2,7.5);c.litter(2);
   },
   C02(c){ // repair bay
@@ -3749,20 +3648,17 @@ const ROOMS={
     PR.barrel(R(5.6),M.pGray);PR.barrel(R(6.3),M.pRed);
     hideAt(F(1.8));
     g.d('warn',9.2,2.3,.117,'f',.34,.31);PR.shelf(B(4.6),2.0,2.0,'parts');
-    lampTube(g,6.6,h,2.4,'x','cool',0,{i:1.3,r:9,rods:.5});lampTube(g,6.6,h,8.6,'x','cool',-1,{rods:.5});
     c.patrol(10.3,6.8);c.litter(2);
   },
   C03(c){ // radio room
     const {g,W,h,F,B,L,R}=c;
     for(const v of [3.0,3.7,4.4])PR.rack(L(v),true);
-    g.light({x:1.6,y:1.4,z:3.7,kind:'green',i:.6,r:5,mode:4,drop:0,soft:true});
     PR.desk(R(4.8),{phone:true});PR.radio(R(4.8).at(-.1,.1,0).lift(.78));PR.chair(g.at(12.7,4.8,1));
     for(const v of [3.2,6.3])g.c(M.rub,.03,h-1.3,W-.2,1.3+(h-1.3)/2,v,'y',6);
     PR.table(g.at(6.6,5.0,0),1.4,.8);g.d('news',7.0,.763,5.35,'u',.3,.4,false,-.3);c.frag(6.3,5.4,.76);
     PR.sofa(F(2.2),M.pGreen);
     g.d('map',10.8,1.9,.117,'f',1.5,.9);g.d('clock',9.4,2.6,.117,'f',.34,.34);
     PR.cabinet(B(4.4),1.2,1.8,.5,M.pGray,'cabdoor');PR.boxes(B(10.0),4);
-    lampPanel(g,7,h,4.6,'cool',1,{i:.9});lampPanel(g,3.6,h,9.6,'cool',-1);
     c.patrol(9.5,7.2);c.litter(4);
   },
   C04(c){ // depot archive
@@ -3770,10 +3666,9 @@ const ROOMS={
     PR.cabinet(L(3.4),1.4,1.0,.9,M.pGreen,'drawers');PR.cabinet(L(5.2),1.4,1.0,.9,M.pGreen,'drawers');
     c.frag(.6,5.2,1.0,1.7,5.2);
     PR.shelf(R(3.6),1.8,2.2,'tubes');PR.shelf(R(5.7),1.8,2.2,'tubes');
-    PR.table(g.at(7.0,4.6,0),1.6,1.0);g.d('map',7.0,.763,5.1,'u',1.2,.72);PR.deskLamp(g.at(6.4,4.75,0).lift(.76),true);
+    PR.table(g.at(7.0,4.6,0),1.6,1.0);g.d('map',7.0,.763,5.1,'u',1.2,.72);
     PR.boxes(g.at(3.4,6.9,0),5);PR.shelf(F(11.0),2.0,2.2,'binders');PR.filing(F(2.0),3);
     PR.shelf(B(5.0),2.0,2.0,'boxes');
-    lampPanel(g,7,h,7.4,'cool',-1);lampPanel(g,10.8,h,2.6,'cool',2);
     c.patrol(9.6,7.0);c.litter(6);
   },
   C05(c){ // service room
@@ -3785,7 +3680,6 @@ const ROOMS={
     hideAt(F(1.8));
     PR.crate(g.at(8.0,5.4,0),.8,true);c.frag(8.0,5.8,.65);
     PR.bucket(F(12.4));PR.shelf(B(4.0),1.6,2.0,'boxes');
-    lampBulk(g,W-.11,2.8,2.4,'l','cool',1,{i:1.0,r:7.5});lampBulk(g,.11,2.8,7.6,'r','cool',0,{i:1.0,r:7.5});
     c.patrol(9.8,7.2);c.litter(2);
   },
   C06(c){ // server room
@@ -3797,7 +3691,6 @@ const ROOMS={
     hideAt(F(11.6));
     g.c(M.pBlue,.035,4,5,.04,5.1,'x',6);g.c(M.pYellow,.03,3,6.2,.035,5.4,'x',6);
     g.d('warn',.117,2.4,2.4,'r',.34,.31);PR.boxes(B(9.6),3);
-    lampTube(g,5,h,5.1,'x','blue',0,{i:1.0,r:8,poolA:.4});lampPanel(g,10.6,h,2.6,'cool',1,{i:.9});
     c.patrol(10.7,6.7);c.litter(1);
   },
   C07(c){nodeRoom(c,'C');}
@@ -3821,7 +3714,7 @@ function steamAt(pos,dir){
   QUEST.steam.push(pos.clone());
 }
 function noteDesk(g,s){
-  PR.desk(g,{lamp:true,phone:true});
+  PR.desk(g,{phone:true});
   g.d('journal',0,2.05,.008,'f',.9,.3);
   const grp=new THREE.Group();
   const board=new THREE.Mesh(new THREE.BoxGeometry(.26,.012,.36),M.pBrown);grp.add(board);
@@ -3893,9 +3786,6 @@ function dressCorridor(s){
     // station clock that stopped
     cg.b(M.pDark,.2,.36,1.0,46.2,3.2,0);for(const z of [-.4,.4])cg.b(M.pDark,.03,1.04,.03,46.2,3.56,z);
     decal('clockled',cg.wx(46.2,0)-.107,3.38,0,-Math.PI/2,.9,.33);decal('clockled',cg.wx(46.2,0)+.107,3.38,0,Math.PI/2,.9,.33);
-    cg.light({x:46.2,y:3.2,z:0,kind:'red',i:.35,r:4,mode:4,drop:0,soft:true});
-    const st=[0,-1,1,0,-1,-1,0,2,-1,0,-1,1,0,-1,0];
-    for(let i=0;i<15;i++)lampTube(cg,6+i*6,4.12,0,'z','cool',st[i],{rods:.5,i:1.55,r:10.5});
     cg.d('manhole',33,.012,1.6,'u',.9,.9);cg.d('grate',71,.012,2.9,'u',1.8,.47);
     litter(26);
   }else if(s===1){
@@ -3920,9 +3810,6 @@ function dressCorridor(s){
     const nw=cg.at(0,-3.89,0);PR.pipes(nw,.6,90.2,4.16,.26,.11);PR.pipes(nw,.6,90.2,4.38,.2,.07,M.pBlue);PR.pipes(nw,.6,90.2,3.96,.2,.045,M.pYellow);
     cg.b(M.pGray,89,.5,.9,46,3.95,3.25);for(let o=8;o<90;o+=12)cg.d('vent',o,3.948,3.25,'dn',.9,.56);
     steamAt(nw.p(66.3,.3,4.05),new THREE.Vector3(.2,-.9,1));
-    const st=[0,0,1,0,-1,0,0,2,0,-1,0,1,0,0,-1];
-    for(let i=0;i<15;i++)lampTube(cg,6+i*6,4.1,-.4,'z','warm',st[i],{rods:.5,i:1.6,r:10.5});
-    for(const [o,n] of [[18.6,1],[45.2,0],[73.9,1],[88.8,0]]){const w=n?N(o):S(o);lampBulk(w,0,2.9,0,'f','red',3,{i:.75,r:6.5});}
     for(let o=10;o<90;o+=16)cg.d('grate',o,.012,0,'u',2.4,.42);
     for(const [o,z,r] of [[14,2.2,1.2],[37,-1.4,1.0],[58,1.8,1.4],[82,-.6,1.1]]){const m=new THREE.Mesh(new THREE.CircleGeometry(r,20),M.puddle);m.rotation.x=-Math.PI/2;m.position.set(b+o,.014,z);m.renderOrder=2;world.add(m);}
     litter(10);
@@ -3944,8 +3831,6 @@ function dressCorridor(s){
       cg.b(M.pYellow,.4,.5,7.7,o,3.7,0);cg.b(M.pDark,.6,.34,.5,o,3.36,.6);cg.c(M.steel,.014,1.0,o,2.86,.6,'y',5);cg.b(M.steel,.12,.18,.05,o,2.2,.6);
       cg.d('warn',o-.207,3.95,-2.2,'l',.36,.33);
     }
-    const st=[0,-1,0,1,-1,0,-1,0,2,0];
-    for(let i=0;i<10;i++)lampBay(cg,5+i*9,3.6,.6,'cool',st[i],{i:1.9,r:11.5});
     for(const o of [12,37,61,83])cg.d('walk',o,.013,2.0,'u',.6,1.2,true,-Math.PI/2);
     cg.d('manhole',25,.012,-1.2,'u',.9,.9);
     litter(8);
@@ -3954,10 +3839,7 @@ function dressCorridor(s){
 function dressPassages(s){
   const b=-26+s*92,gN=Frame(b,-19.89,1,0,0,1),gS=Frame(b,19.89,-1,0,0,-1);
   const SX=o=>-o; // the south frame runs backwards
-  const st=[[0,-1,1],[0,0,0],[-1,0,1]][s];
-  [26,50,74].forEach((o,i)=>{
-    lampBulk(gN,o,2.6,0,'f','amber',st[i],{i:.9,r:7});
-    if(o<72)lampBulk(gS,SX(o),2.6,0,'f','amber',st[(i+1)%3],{i:.9,r:7});
+  [26,50,74].forEach(o=>{
     QUEST.patrol[s].push(new THREE.Vector3(b+o,0,-18));if(o<72)QUEST.patrol[s].push(new THREE.Vector3(b+o,0,18));
   });
   // service pipes only between the rooms, where there is a wall to carry them
@@ -4085,7 +3967,7 @@ function openJournalScreen(){
     const got=SHARDS.find(a=>a.room===r).got,seen=known||QUEST.visited.has(r.id);
     return `<div><span>${got?'✓':'○'} ${r.id}</span> <span>${seen?labelPair(r.name):bi('Невідома кімната','Unexplored room')}</span><span>${got?bi('ЗІБРАНО','FOUND'):''}</span></div>`;
   }).join('')}</div>
-  <div class="note">${bi('Зелена шафа з лампою: укриття, у ній Ехо тебе не дістане. Тримай R для підзарядки; генератор шумить.','A green locker with a lamp is a shelter; Echo cannot reach you inside. Hold R to recharge; the generator is noisy.')}</div>
+  <div class="note">${bi('Зелена шафа з написом «Укриття»: у ній Ехо тебе не дістане. Тримай R для підзарядки; генератор шумить.','A green locker marked Shelter keeps you safe; Echo cannot reach you inside. Hold R to recharge; the generator is noisy.')}</div>
   <div class="cta"><button class="pill primary" id="closeJournal">${bi('Повернутись','Return')} · ${count}/7</button></div>`,true);
   document.getElementById('closeJournal').onclick=()=>{Game.state='play';hideScreen();lockPointer();};
 }
@@ -4188,8 +4070,8 @@ function resumeCheckpoint(){
   if(saved.stage===3)exitOpened=true;
 }
 /* ---- shelter hint on the death screen ---- */
-STR.ua.dRow2='Зелена шафа з лампою: укриття, у ній Echo тебе не дістане. Останній вузол, якому ти передав дані, зберігає прогрес.';
-STR.en.dRow2='A green locker with a lamp is a shelter; Echo cannot reach you inside. The last node you delivered to keeps your progress.';
+STR.ua.dRow2='Зелена шафа з написом «Укриття»: у ній Echo тебе не дістане. Останній вузол, якому ти передав дані, зберігає прогрес.';
+STR.en.dRow2='A green locker marked Shelter keeps you safe; Echo cannot reach you inside. The last node you delivered to keeps your progress.';
 
 function fragmentApproach(target){
   // A pickup may sit next to furniture: route to an unobstructed interaction position.
