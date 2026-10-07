@@ -6737,10 +6737,17 @@ function echoNavAnchor(p,loose){
   return loose&&list.length?list[0].v:null;
 }
 function echoRoute(from,to){
-  if(QUEST&&shadowZone(to.x,to.z,.5))return null;   // the shadow room is closed to Echoes; do not search the whole map for a way in
+  if(QUEST&&shadowZone(to.x,to.z))return null;   // a refuge is closed to Echoes; a point on its threshold leads to the nearest cell outside
   const start=echoNavAnchor(from),end=echoNavAnchor(to,true);if(!start||!end)return null;
   const path=Nav.path(start,end);if(!path)return null;
   return [start,...path];
+}
+// At the threshold of a refuge an Echo cannot follow: it gives up and walks to the far end of its sector.
+function echoGiveUp(e){
+  e.state='patrol';e.searchT=0;e.stare=0;e.toLast=false;e.lunge=0;e.path=null;e.repath=0;e.stuckTime=0;
+  const pts=(QUEST?QUEST.patrol[e.homeSector]:[]).slice().sort((a,b)=>Math.hypot(b.x-P.pos.x,b.z-P.pos.z)-Math.hypot(a.x-P.pos.x,a.z-P.pos.z));
+  e.wander=null;
+  for(const p of pts.slice(0,4))if(echoRoute(e.g.position,p)){e.wander=p.clone();break;}
 }
 function nextEchoPatrol(e){
   const points=QUEST?QUEST.patrol[e.homeSector]:[];
@@ -6820,25 +6827,32 @@ function updateEcho(e,dt){
   const canSee=!HIDE.active&&Game.time>(P.grace||0)&&!(QUEST&&shadowZone(P.pos.x,P.pos.z))&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8));
 
   if(canSee){
-    if(e.state!=='hunt'){e.state='hunt';e.repath=0;Snd.monsterCall(pos);}
+    if(e.state!=='hunt'){e.state='hunt';e.repath=0;e.stare=0;e.toLast=false;Snd.monsterCall(pos);}
     const movement=new THREE.Vector3().subVectors(P.pos,e.lastSeen);movement.y=0;if(movement.length()>.03)e.lastHeading=movement.normalize();
     e.lastSeen.copy(P.pos);e.searchT=0;
   }else if(e.state==='hunt'){
     // Lost sight: go to where the courier was last seen first, and only then look around.
     // Sight flickers at doorways and at the edge of range, and the target must not jump when it does.
     e.state='search';e.searchT=10;e.path=null;e.repath=0;
-    e.searchAge=0;
-    if(!HIDE.active&&echoRoute(pos,e.lastSeen)){e.searchTarget=e.lastSeen.clone();e.searchMove=6;}
-    else{e.searchTarget=chooseEchoSearch(e);e.searchMove=3;}
+    e.searchAge=0;e.stare=0;
+    if(!HIDE.active&&echoRoute(pos,e.lastSeen)){e.searchTarget=e.lastSeen.clone();e.searchMove=6;e.toLast=true;}
+    else{e.searchTarget=chooseEchoSearch(e);e.searchMove=3;e.toLast=false;}
   }
 
   if(e.state==='search'){
     e.searchT-=dt;e.searchMove=(e.searchMove||0)-dt;e.searchAge=(e.searchAge||0)+dt;
-    // a finished route counts as arriving, once the Echo has had a moment to set off
-    if(e.searchMove<=0||!e.searchTarget||e.g.position.distanceTo(e.searchTarget)<1.2||(e.searchAge>.5&&e.path&&e.pi>=e.path.length)){
-      e.searchTarget=chooseEchoSearch(e)||e.home;e.searchMove=3.5;e.searchAge=0;e.path=null;e.repath=0;
+    const refuge=QUEST&&shadowZone(P.pos.x,P.pos.z);
+    if(e.stare>0){
+      // it stands at the threshold looking in, then leaves
+      e.stare-=dt;
+      if(!refuge)e.stare=0;else if(e.stare<=0)echoGiveUp(e);
     }
-    if(e.searchT<=0){
+    // a finished route counts as arriving, once the Echo has had a moment to set off
+    else if(e.searchMove<=0||!e.searchTarget||e.g.position.distanceTo(e.searchTarget)<1.2||(e.searchAge>.5&&e.path&&e.pi>=e.path.length)){
+      if(refuge&&e.toLast){e.stare=1.8;e.toLast=false;e.path=null;}
+      else{e.searchTarget=chooseEchoSearch(e)||e.home;e.searchMove=3.5;e.searchAge=0;e.toLast=false;e.path=null;e.repath=0;}
+    }
+    if(e.state==='search'&&e.searchT<=0&&!(e.stare>0)){
       e.state='patrol';
       forkEcho(e);e.wander=null;e.repath=0;
       e.path=null;
@@ -6857,7 +6871,7 @@ function updateEcho(e,dt){
     target=e.wander||e.home;
   }
   e.repath-=dt;
-  if(e.repath<=0&&!e.closing){
+  if(e.repath<=0&&!e.closing&&!(e.stare>0)){
     e.path=echoRoute(pos,target);e.pi=0;
     e.repath=e.state==='hunt'?0.55:1.5;
     if(!e.path&&e.state==='patrol'){e.wander=null;e.repath=.3;}
@@ -6898,7 +6912,8 @@ function updateEcho(e,dt){
   if(e.stuckTime>1.2){e.path=null;e.repath=0;if(e.state==='patrol')e.wander=null;}
 
   // facing + gait
-  const want=Math.atan2(dir.x,dir.z);
+  // standing at a threshold it faces the courier; with nowhere to go it keeps the way it was facing
+  const want=e.stare>0?Math.atan2(P.pos.x-pos.x,P.pos.z-pos.z):(dir.x||dir.z)?Math.atan2(dir.x,dir.z):e.g.rotation.y;
   let diff=want-e.g.rotation.y;
   while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
   e.g.rotation.y+=diff*Math.min(1,dt*6);
