@@ -284,6 +284,13 @@
   .versus .fast{background:rgba(100,226,127,.10)}
   .versus .fast .n{color:#9ff0ae}
   .lb{margin-top:30px}
+  .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:26px}
+  .gal button,.gal .lock{aspect-ratio:1;border-radius:2px;border:1px solid #2c4a35;background:#07110a;padding:0;overflow:hidden}
+  .gal button{cursor:pointer;pointer-events:auto}.gal button:hover,.gal button:focus-visible{border-color:#64e27f}
+  .gal canvas{position:static;inset:auto;width:100%;height:100%;display:block}
+  .gal .lock{display:grid;place-items:center;color:#35553f;font:500 22px var(--mono)}
+  .gview{margin-top:22px;display:flex;justify-content:center}
+  .gview img{max-width:100%;max-height:62vh;object-fit:contain;display:block}
   .lb h3{font-size:15px;font-weight:400;margin:0 0 12px;color:var(--steel)}
   .lb ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
   .lb li{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border-radius:10px;background:rgba(255,251,251,.035);font-size:14px;color:var(--steel)}
@@ -3222,6 +3229,55 @@ function artLook(){
   }
   return best;
 }
+/* ---- gallery ----
+   Every picture the courier has lifted is kept, on this device, and can be looked at from the menu. */
+const GALLERY=new Set((store.get('deadrelay_gallery')||'').split(',').filter(v=>/^\d+$/.test(v)).map(Number).filter(v=>v<ART_SRC.length));
+const GAL={thumbs:{}};
+function galleryAdd(i){
+  if(GALLERY.has(i))return false;
+  GALLERY.add(i);store.set('deadrelay_gallery',[...GALLERY].sort((a,b)=>a-b).join(','));
+  return true;
+}
+// small square previews, painted once: the grid never holds the full pictures
+function galleryThumb(i){
+  if(!GAL.thumbs[i])GAL.thumbs[i]=new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{
+      const S=200,c=cvs(S,S),k=Math.max(S/im.width,S/im.height),w=im.width*k,h=im.height*k;
+      c.getContext('2d').drawImage(im,(S-w)/2,(S-h)/2,w,h);res(c);
+    };
+    im.onerror=()=>res(null);im.src=ART_SRC[i];
+  });
+  return GAL.thumbs[i];
+}
+function galleryScreen(){
+  redrawScreen=galleryScreen;
+  const n=ART_SRC.length,got=GALLERY.size;
+  screen(`${eyebrow('OPTIMUM · DEAD RELAY')}<h2>${bi('Галерея','Gallery')} · ${got} / ${n}</h2>
+    <div class="body rise">${got?bi('Постери спільноти, які ти підняв на станції. Натисни, щоб розглянути.','Community posters you picked up in the station. Tap one to look closer.')
+      :bi('Тут поки порожньо. Піднімай постери на станції, і вони з’являться тут.','Nothing here yet. Pick up posters in the station and they will appear here.')}</div>
+    <div class="gal rise">${ART_SRC.map((_,i)=>GALLERY.has(i)?`<button data-i="${i}" aria-label="${bi('Постер','Poster')} ${i+1}"></button>`:`<div class="lock">?</div>`).join('')}</div>
+    <div class="cta rise"><button class="pill quiet" id="galBack">${bi('Назад','Back')}</button></div>`,false);
+  document.getElementById('galBack').onclick=()=>menu();
+  UI.card.querySelectorAll('.gal button').forEach(b=>{
+    const i=+b.dataset.i;
+    b.onclick=()=>galleryView(i);
+    galleryThumb(i).then(c=>{if(c&&b.isConnected)b.appendChild(c);});
+  });
+}
+function galleryView(i){
+  redrawScreen=()=>galleryView(i);
+  const got=[...GALLERY].sort((a,b)=>a-b),k=Math.max(0,got.indexOf(i)),many=got.length>1;
+  screen(`${eyebrow(bi('ГАЛЕРЕЯ','GALLERY')+' · '+(k+1)+' / '+got.length)}
+    <div class="gview"><img src="${ART_SRC[got[k]]}" alt="${bi('Постер','Poster')} ${got[k]+1}"></div>
+    <div class="cta rise">${many?`<button class="pill quiet" id="galPrev" aria-label="${bi('Попередній','Previous')}">←</button><button class="pill quiet" id="galNext" aria-label="${bi('Наступний','Next')}">→</button>`:''}
+    <button class="pill quiet" id="galBack">${bi('До галереї','To the gallery')}</button></div>`,false);
+  document.getElementById('galBack').onclick=()=>galleryScreen();
+  if(many){
+    document.getElementById('galPrev').onclick=()=>galleryView(got[(k+got.length-1)%got.length]);
+    document.getElementById('galNext').onclick=()=>galleryView(got[(k+1)%got.length]);
+  }
+}
 function artRustle(){Snd.noise(.16,'highpass',3000,.07,.7);setTimeout(()=>Snd.noise(.1,'bandpass',1900,.05,1),90);}
 function artTake(s){
   if(ART.held||!s)return;
@@ -3231,6 +3287,7 @@ function artTake(s){
   const m=new THREE.Mesh(geo,mat);m.renderOrder=999;m.frustumCulled=false;m.visible=false;camera.add(m);
   const hd=ART.held={sheet:s,mesh:m,t:0,out:false,tex:null,lit:P.lampOn?1:0};
   artRustle();
+  if(galleryAdd(s.art))toast(bi(`Постер у галереї · ${GALLERY.size} / ${ART_SRC.length}`,`Poster added to the gallery · ${GALLERY.size} / ${ART_SRC.length}`));
   // the floor copy is small; paint a sharp one for reading
   const im=new Image();
   im.onload=()=>{
@@ -4811,7 +4868,7 @@ function updateQuest(dt,wants){
     consider(sh,sh.aim,{type:'shard',ref:sh,marker:sh.marker});
   }
   if(q.current&&q.current.marker){q.current.marker.material.opacity=1;const m=q.current.marker;m.scale.multiplyScalar(1.5);}
-  if(!q.current){const sheet=artLook();if(sheet)q.current={type:'art',sheet,label:()=>bi('Підняти постер','Pick up the poster')};}
+  if(!q.current){const sheet=artLook();if(sheet)q.current={type:'art',sheet,label:()=>GALLERY.has(sheet.art)?bi('Підняти постер · є в галереї','Pick up the poster · in the gallery'):bi('Підняти постер','Pick up the poster')};}
   const p=document.getElementById('interact'),c=q.current;
   p.textContent=c?'E · '+(c.type==='shard'?bi('Забрати фрагмент','Collect fragment'):c.label()):'';
   p.classList.toggle('visible',!!c);
@@ -6186,6 +6243,7 @@ function menu(){
     </div>
     <div class="chips rise">
       <button class="chip" id="lbt">${bi('ЛІДЕРБОРД','LEADERBOARD')}</button>
+      ${ART_SRC.length?`<button class="chip" id="galt">${bi('ГАЛЕРЕЯ','GALLERY')} · ${GALLERY.size}/${ART_SRC.length}</button>`:''}
       <button class="chip" id="langt">${LANG==='en'?'УКР':'ENG'}</button>
       ${soundControls()}
       ${gfxControl()}
@@ -6193,6 +6251,7 @@ function menu(){
 
   </div>`,false);
   document.getElementById('lbt').onclick=()=>leaderboardScreen();
+  {const g=document.getElementById('galt');if(g)g.onclick=()=>galleryScreen();}
 
   document.getElementById('s1').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();CHECKPOINT=null;Game.start(0);};
   if(TEST_TOOLS)document.getElementById('s2t').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();Game.start(1);};
