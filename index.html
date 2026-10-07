@@ -3308,7 +3308,7 @@ function shadowCut(){
 }
 // The room and its vestibule are a refuge: an Echo cannot see into them or step through the door.
 // m widens the doorway test, so an Echo's body is stopped before it reaches the threshold.
-function shadowZone(x,z,m){m=m||0;return (x>56-m&&x<58+m&&z>4.2-m&&z<8.01)||(x>52&&x<60&&z>=8&&z<16);}
+function shadowZone(x,z,m){m=m||0;return (x>56-m&&x<58+m&&z>4.2-m&&z<8.01)||(x>52&&x<60&&z>=8&&z<16)||arenaZone(x,z,m);}
 function shadowDispose(){for(const t of SHADOW.tex)t.dispose();SHADOW.tex=[];}
 function shadowTex(canvas){
   const t=tex(canvas,1,1);t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;SHADOW.tex.push(t);return t;
@@ -3392,7 +3392,7 @@ function shadowDoor(){
 const _sv=new THREE.Vector3(),_sf=new THREE.Vector3();
 function shadowTick(dt){
   const S=SHADOW,px=P.pos.x,pz=P.pos.z;
-  if(!S.told&&shadowZone(px,pz)&&pz>8.4){S.told=true;const safe=bi('Сюди Echo не заходить, тут можна перечекати.','Echo does not come in here, you can wait it out.');if(!findMark('cipher',safe))toast(safe);}
+  if(!S.told&&px<61&&shadowZone(px,pz)&&pz>8.4){S.told=true;const safe=bi('Сюди Echo не заходить, тут можна перечекати.','Echo does not come in here, you can wait it out.');if(!findMark('cipher',safe))toast(safe);}
   const r=S.r;if(!r)return;
   if(px<50||px>62||pz<2||pz>17){
     if(r.vis>0){r.vis=0;r.full.visible=false;for(const p of r.parts)p.m.visible=false;}
@@ -3448,7 +3448,10 @@ const FINDS=[
     url:'https://dcityuknow.github.io/from0tohero/',link:['Грати в Block Arena','Play Block Arena']}
 ];
 const FOUND=new Set(),FIND_POS={},FIND={tex:[],told:false,board:null,pending:null};
-function findsReset(){for(const t of FIND.tex)t.dispose();FIND.tex=[];for(const k of Object.keys(FIND_POS))delete FIND_POS[k];FIND.board=null;}
+function findsReset(){
+  for(const t of FIND.tex)t.dispose();FIND.tex=[];for(const k of Object.keys(FIND_POS))delete FIND_POS[k];FIND.board=null;
+  ARENA.gun=null;ARENA.inside=false;ARENA.targets=[];ARENA.parts=[];ARENA.holes=[];if(ARENA.hand)ARENA.hand.visible=false;
+}
 function findTex(w,h,paint){const d=dynTex(w,h);paint(d.x,w,h);d.done();FIND.tex.push(d.t);return d;}
 function findById(id){return FINDS.find(f=>f.id===id);}
 function findMark(id,extra){
@@ -3574,7 +3577,74 @@ function findHawk(c){
   findItem('hawk',L.p(0,.25,1.8),['Відкрити Content Oracle','Open Content Oracle']);
 }
 
-/* ---- Keng SiRô: Block Arena. A shooting range built of blocks in an alcove off the service wing. ---- */
+/* ---- Keng SiRô: Block Arena. A shooting range built of blocks in an alcove off the service wing. ----
+   The courier can shoot here and nowhere else: the pistol only comes to hand inside the alcove,
+   and Echoes cannot see or step into it. */
+const ARENA={inside:false,hits:0,cool:0,kick:0,gun:null,hand:null,targets:[],parts:[],holes:[],hole:0,told:false,holeMat:null};
+function arenaZone(x,z,m){m=m||0;return x>148-m&&x<152+m&&z>4.25-m&&z<10;}
+function arenaHand(){
+  if(ARENA.hand)return ARENA.hand;
+  const g=new THREE.Group(),mat=c=>new THREE.MeshBasicMaterial({color:c});
+  ARENA.handMats=[mat(0xd9d6cf),mat(0x7d7f85),mat(0xe08a22),mat(0x26252b),mat(0x63656b)];
+  const M5=ARENA.handMats;
+  for(const [m,w,h,d,x,y,z] of [[0,.1,.1,.34,0,.05,0],[1,.06,.06,.14,0,.06,-.22],[2,.07,.07,.04,0,.06,-.3],[3,.09,.16,.09,0,-.06,.1],[2,.1,.03,.06,0,.11,.02],[4,.1,.04,.12,0,.11,-.06]]){
+    const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M5[m]);b.position.set(x,y,z);g.add(b);}
+  g.visible=false;g.renderOrder=998;camera.add(g);ARENA.hand=g;return g;
+}
+function arenaBurst(x,y,z,mat){
+  let n=0;
+  for(const p of ARENA.parts){
+    if(p.life>0||n>=5)continue;n++;
+    p.m.material=mat;p.m.position.set(x,y,z);p.m.visible=true;p.life=.7;
+    p.v.set((Math.random()-.5)*2.4,1.2+Math.random()*1.8,-.6-Math.random()*1.6);
+  }
+}
+function arenaFire(){
+  if(ARENA.cool>0||!ARENA.inside)return;
+  ARENA.cool=.2;ARENA.kick=1;
+  Snd.noise(.07,'bandpass',900,.16,1.4);Snd.tone(150,.09,'square',.06,60);
+  const o=camera.position,d=_af.set(0,0,-1).applyQuaternion(camera.quaternion);
+  if(d.z<=.05)return;
+  let best=null,bt=1e9;
+  for(const t of ARENA.targets){
+    if(t.down>0)continue;
+    const k=(t.z-o.z)/d.z,x=o.x+d.x*k,y=o.y+d.y*k;
+    if(k>0&&k<bt&&Math.abs(x-t.x)<t.hw&&y>t.y0&&y<t.y1){bt=k;best=t;}
+  }
+  if(best){
+    best.down=1.7;ARENA.hits++;
+    Snd.tone(880,.08,'square',.05);setTimeout(()=>Snd.tone(1320,.1,'square',.045),60);
+    arenaBurst(o.x+d.x*bt,o.y+d.y*bt,best.z-.05,best.col);
+    return;
+  }
+  const kw=(9.755-o.z)/d.z,x=o.x+d.x*kw,y=o.y+d.y*kw;
+  if(x>148.15&&x<151.85&&y>.05&&y<2.95){const m=ARENA.holes[ARENA.hole++%ARENA.holes.length];m.position.set(x,y,9.752);m.visible=true;}
+}
+function arenaTick(dt){
+  const A=ARENA;if(!A.gun)return;
+  const inside=arenaZone(P.pos.x,P.pos.z)&&!HIDE.active&&!ART.held;
+  if(inside!==A.inside){
+    A.inside=inside;A.gun.visible=!inside;arenaHand().visible=inside;
+    if(inside&&!A.told){A.told=true;toast(bi('У тирі Echo тебе не дістане. Пістолет у руці: стріляй по мішенях.','Echo cannot reach you in the range. The pistol is in your hand: shoot the targets.'));}
+  }
+  A.cool=Math.max(0,A.cool-dt);A.kick=Math.max(0,A.kick-dt*7);
+  if(inside){
+    const h=A.hand,lit=P.lampOn&&lamp.intensity>.4?1:.3,base=[[.85,.84,.81],[.49,.5,.52],[.88,.54,.13],[.15,.145,.17],[.39,.4,.42]];
+    A.handMats.forEach((m,i)=>m.color.setRGB(base[i][0]*lit,base[i][1]*lit,base[i][2]*lit));
+    h.position.set(.2,-.2+Math.sin(P.bob)*.006+A.kick*.02,-.44+A.kick*.05);h.rotation.set(A.kick*.22,.06,0);
+  }
+  for(const t of A.targets){
+    if(t.down>0)t.down-=dt;
+    t.tilt=lerp(t.tilt,t.down>0?1:0,Math.min(1,dt*(t.down>0?16:5)));
+    t.g.rotation.x=t.tilt*1.45;
+  }
+  for(const p of A.parts){
+    if(p.life<=0)continue;
+    p.life-=dt;p.v.y-=7*dt;p.m.position.addScaledVector(p.v,dt);
+    if(p.m.position.y<.04){p.m.position.y=.04;p.v.set(0,0,0);}
+    if(p.life<=0)p.m.visible=false;
+  }
+}
 const VOX={};
 function vox(name,hex){return VOX[name]||(VOX[name]=Object.assign(new THREE.MeshStandardMaterial({color:lin(hex),roughness:.92,metalness:0}),{userData:{uv:[1,1]}}));}
 function findArena(){
@@ -3588,21 +3658,32 @@ function findArena(){
   // counter across the alcove
   for(let i=0;i<8;i++)bbox(i%2?G1:G2,.4725,.54,.5,X-1.654+i*.4725,.27,6.2,0);
   bbox(DK,3.78,.06,.6,X,.57,6.2,0);COL.push({x0:X-1.89,x1:X+1.89,z0:5.9,z1:6.5,y0:0,y1:1.1});
-  // a blocky pistol left on it
+  // a blocky pistol left on it; it goes into the courier's hand while they stand in the range
   const gun=new THREE.Group();
   for(const [m,w,h,d,x,y,z] of [[W,.34,.1,.1,0,.05,0],[G1,.14,.06,.06,.22,.06,0],[OR,.04,.07,.07,.3,.06,0],[DK,.09,.16,.09,-.1,-.06,0],[OR,.06,.03,.1,-.02,.11,0],[G2,.12,.04,.1,.06,.11,0]]){
     const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);gun.add(b);}
   gun.position.set(X-.9,.66,6.12);gun.rotation.set(Math.PI/2,0,.5);world.add(gun);
-  // targets: rings of blocks on posts
+  ARENA.gun=gun;ARENA.targets=[];ARENA.parts=[];ARENA.holes=[];ARENA.inside=false;ARENA.hits=0;
+  // targets: rings of blocks on posts, hinged at the floor so a hit knocks them flat
+  const ring=findTex(5,5,(x,w,h)=>{for(let jj=0;jj<5;jj++)for(let ii=0;ii<5;ii++){x.fillStyle=Math.max(Math.abs(ii-2),Math.abs(jj-2))===1?'#f2f0ea':'#c4322a';x.fillRect(ii,jj,1,1);}});
+  ring.t.magFilter=THREE.NearestFilter;ring.t.minFilter=THREE.NearestFilter;ring.t.generateMipmaps=false;
+  const ringMat=new THREE.MeshStandardMaterial({map:ring.t,roughness:.9});
   const target=(tx,tz,ty)=>{
-    bbox(BR,.1,ty-.25,.1,tx,(ty-.25)/2,tz,0);
-    for(let j=0;j<5;j++)for(let i=0;i<5;i++){const ring=Math.max(Math.abs(i-2),Math.abs(j-2));bbox(ring===1?W:R,.1,.1,.1,tx+(i-2)*.1,ty+(j-2)*.1,tz-.06,0);}
+    const g=new THREE.Group();g.position.set(tx,0,tz);
+    const post=new THREE.Mesh(new THREE.BoxGeometry(.1,ty-.25,.1),BR);post.position.y=(ty-.25)/2;g.add(post);
+    const head=new THREE.Mesh(new THREE.BoxGeometry(.5,.5,.1),ringMat);head.position.set(0,ty,-.06);g.add(head);
+    world.add(g);ARENA.targets.push({g,x:tx,z:tz-.11,hw:.25,y0:ty-.25,y1:ty+.25,down:0,tilt:0,col:R});
   };
   target(X-1.15,8.3,1.25);target(X+1.2,7.7,1.1);
   // a bot standing in for the ones that throw rocks
-  const bx=X+.2,bz=9.05;
-  for(const [m,w,h,d,x,y] of [[DK,.16,.5,.16,-.11,.25],[DK,.16,.5,.16,.11,.25],[PK,.42,.5,.22,0,.75],[P2,.14,.46,.14,-.29,.76],[P2,.14,.46,.14,.29,.76],[W,.34,.34,.3,0,1.19]])bbox(m,w,h,d,bx+x,y,bz,0);
-  for(const ex of [-.08,.08])bbox(DK,.07,.07,.02,bx+ex,1.22,bz-.16,0);
+  const bx=X+.2,bz=9.05,bot=new THREE.Group();bot.position.set(bx,0,bz);
+  for(const [m,w,h,d,x,y,z] of [[DK,.16,.5,.16,-.11,.25,0],[DK,.16,.5,.16,.11,.25,0],[PK,.42,.5,.22,0,.75,0],[P2,.14,.46,.14,-.29,.76,0],[P2,.14,.46,.14,.29,.76,0],[W,.34,.34,.3,0,1.19,0],[DK,.07,.07,.02,-.08,1.22,-.16],[DK,.07,.07,.02,.08,1.22,-.16]]){
+    const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);bot.add(b);}
+  world.add(bot);ARENA.targets.push({g:bot,x:bx,z:bz-.12,hw:.36,y0:0,y1:1.36,down:0,tilt:0,col:PK});
+  // chips of block that fly off a hit, and marks left on the wall by a miss
+  for(let k=0;k<10;k++){const m=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,.06),W);m.visible=false;world.add(m);ARENA.parts.push({m,v:new THREE.Vector3(),life:0});}
+  for(let k=0;k<14;k++){const m=new THREE.Mesh(new THREE.PlaneGeometry(.07,.07),ARENA.holeMat||(ARENA.holeMat=new THREE.MeshBasicMaterial({color:0x140d0a})));m.rotation.y=Math.PI;m.visible=false;world.add(m);ARENA.holes.push(m);}
+  ARENA.hole=0;
   // pink blocks on the grass: health, if you live long enough to pick it up
   for(const [x,y,z] of [[0,0,0],[.1,0,0],[0,0,.1],[.1,0,.1],[.05,.1,.05],[.2,0,.05]])bbox((x+z)*10%2?PK:P2,.1,.1,.1,X+1.25+x,.05+y,6.95+z,0);
   // back wall: the Optimum mark in white blocks, cut from the real logo
@@ -4647,7 +4728,7 @@ function questInteract(){
   if(ART.held){artDrop();return;}
   if(HIDE.active){toggleHide();return;}
   // an item under the crosshair comes first; with nothing to use, the same key takes the nearest shelter
-  if(!QUEST||!QUEST.current){if(nearHide())toggleHide();return;}
+  if(!QUEST||!QUEST.current){if(ARENA.inside)arenaFire();else if(nearHide())toggleHide();return;}
   const a=QUEST.current,q=QUEST;
   if(a.type==='shard'){
     const sh=a.ref;sh.got=true;sh.picking=.38;sh.from=sh.g.position.clone();if(sh.marker)sh.marker.visible=false;
@@ -4734,7 +4815,9 @@ function updateQuest(dt,wants){
   p.textContent=c?'E · '+(c.type==='shard'?bi('Забрати фрагмент','Collect fragment'):c.label()):'';
   p.classList.toggle('visible',!!c);
   if(ART.held){p.textContent='E · '+bi('Покласти постер','Put the poster down');p.classList.add('visible');}
-  p.classList.toggle('low',!!ART.held);
+  const range=ARENA.inside&&!c&&!ART.held;
+  if(range){p.textContent=(TOUCH?bi('ДІЯ','USE'):bi('E або клік','E or click'))+' · '+bi('Стріляти','Shoot')+(ARENA.hits?' · '+ARENA.hits:'');p.classList.add('visible');}
+  p.classList.toggle('low',!!ART.held||range);
   if(keys.KeyR||TIN.charge){
     q.charge+=dt;P.battery=clamp(P.battery+dt*.075,0,1);P.noise=1;P.lampOn=true;
     p.textContent=bi('ПІДЗАРЯДКА · генератор шумить','RECHARGING · generator is noisy');p.classList.add('visible');
@@ -4767,7 +4850,7 @@ function updateQuest(dt,wants){
   /* ambience */
   let steam=0;for(const sp of q.steam){const d=sp.distanceTo(P.pos);if(d<14)steam=Math.max(steam,(1-d/14)*(1-d/14)*.05);}
   Snd.amb(steam,s===1?.016:s===2?.008:.004);
-  artTick(dt);shadowTick(dt);
+  artTick(dt);shadowTick(dt);arenaTick(dt);
 }
 function animateShards(dt){
   SHARDS.forEach((s,i)=>{
@@ -6790,6 +6873,7 @@ await loadArt();
 await loadShadow();
 await loadAvatars();
 if(TEST_TOOLS)testBar();
+addEventListener('mousedown',e=>{if(e.button===0&&Game.state==='play'&&ARENA.inside&&document.pointerLockElement)arenaFire();});
 // canvas text needs the web font before the first texture is painted
 try{await Promise.race([Promise.all([document.fonts.load('600 40px Geist','Optimum АБВ'),document.fonts.load('400 40px Geist','Optimum АБВ'),document.fonts.load('500 30px "Geist Mono"','07')]),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
 loadingStatus(bi('Завантаження звуків...','Loading sounds...'));
