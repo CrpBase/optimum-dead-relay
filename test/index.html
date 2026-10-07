@@ -6182,6 +6182,7 @@ function menu(){
 
     <div class="cta rise">
       <button class="pill primary" id="s1">${T('mStart')}</button>
+      ${TEST_TOOLS?`<button class="pill quiet" id="s2t">${bi('ТЕСТ · Світ Optimum','TEST · Optimum world')}</button>`:''}
     </div>
     <div class="chips rise">
       <button class="chip" id="lbt">${bi('ЛІДЕРБОРД','LEADERBOARD')}</button>
@@ -6194,6 +6195,7 @@ function menu(){
   document.getElementById('lbt').onclick=()=>leaderboardScreen();
 
   document.getElementById('s1').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();CHECKPOINT=null;Game.start(0);};
+  if(TEST_TOOLS)document.getElementById('s2t').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();Game.start(1);};
 }
 
 /* ---------------- world build / teardown ---------------- */
