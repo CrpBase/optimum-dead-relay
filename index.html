@@ -312,6 +312,10 @@
   .frow img,.frow .q{width:40px;height:40px;border-radius:50%;flex-shrink:0;object-fit:cover}.frow img+img{margin-left:-24px}
   .frow .q{display:grid;place-items:center;background:#ffffff14;font-family:var(--mono);color:#B87CFF}
   .frow b{color:#f1f5f2}.frow a{margin-left:auto;color:#B87CFF;text-decoration:none;font:12px var(--mono);letter-spacing:.08em;pointer-events:auto;white-space:nowrap}
+  #testbar{display:none;position:fixed;left:10px;top:42%;z-index:12;flex-direction:column;align-items:flex-start;gap:6px;font-family:var(--mono)}
+  body.metro #testbar{display:flex}
+  #testbar button{pointer-events:auto;cursor:pointer;font:12px var(--mono);letter-spacing:.06em;padding:9px 12px;background:#1b1230e6;color:#d9cfff;border:1px solid #B87CFF;border-radius:6px}
+  #testbar .tl{display:none;flex-direction:column;gap:6px}#testbar.open .tl{display:flex}
   /* ---------- station HUD additions ---------- */
   #vig{position:fixed;inset:0;pointer-events:none;z-index:1;display:none;background:radial-gradient(ellipse at 50% 50%,transparent 46%,rgba(0,0,0,.6) 100%)}
   body.plain-render.metro #vig{display:block}
@@ -3747,6 +3751,48 @@ function findsJournal(){
     `<div class="frow"><span class="q">?</span><div>${bi(f.hint[0],f.hint[1])}</div></div>`).join('')}</div>`;
 }
 
+/* ---------------- test shortcuts ----------------
+   Only the /test/ copy turns these on: a small panel that puts the courier in front of each hidden piece,
+   so they can be tried without walking the whole station. */
+const TEST_TOOLS=false;
+function testGo(id){
+  if(!QUEST||Game.state!=='play')return;
+  if(ART.held)artEnd();
+  if(HIDE.active)toggleHide();
+  let aim=null,dist=1.6;
+  if(id==='cipher'){P.pos.set(57,0,2.2);P.yaw=Math.PI;P.pitch=-.05;camera.position.set(57,P.eye,2.2);return;}
+  if(id==='poster'){const s=ART.placed[0];if(!s)return;aim=s.aim;dist=1.2;}
+  else{const it=QUEST.items.find(a=>a.type==='find'&&a.id===id);if(!it)return;aim=it.aim;}
+  let best=null;
+  for(let k=0;k<32;k++){
+    const an=k*Math.PI/16,x=aim.x+Math.cos(an)*dist,z=aim.z+Math.sin(an)*dist;
+    if(blocked(x,z,.36,0)||!sight(new THREE.Vector3(x,1.68,z),aim))continue;
+    best={x,z};break;
+  }
+  if(!best)return;
+  P.pos.set(best.x,0,best.z);P.yaw=Math.atan2(-(aim.x-best.x),-(aim.z-best.z));P.pitch=Math.atan2(aim.y-1.68,dist);
+  camera.position.set(best.x,P.eye,best.z);
+}
+function testEchoOff(){
+  ECHOES.forEach(e=>world.remove(e.g));ECHOES.length=0;nextEchoCopy=1e12;Snd.silenceMonster();
+  toast(bi('Тест: Echo прибрано до наступного старту.','Test: Echoes removed until the next start.'));
+}
+function testBar(){
+  const bar=document.createElement('div');bar.id='testbar';
+  const items=[['cipher','Тіні · Cipher'],['tour','World Tour'],['vita','NODEOS'],['hawk','Content Oracle'],['poster',bi('Постер','Poster')],['echo',bi('Прибрати Echo','Remove Echo')]];
+  bar.innerHTML=`<button data-t="toggle">ТЕСТ</button><div class="tl">${items.map(i=>`<button data-t="${i[0]}">${i[1]}</button>`).join('')}</div>`;
+  document.body.appendChild(bar);
+  const act=t=>{
+    if(t==='toggle'){bar.classList.toggle('open');return;}
+    bar.classList.remove('open');
+    if(t==='echo')testEchoOff();else testGo(t);
+  };
+  bar.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();act(b.dataset.t);},{passive:false});
+    b.addEventListener('click',e=>{e.stopPropagation();act(b.dataset.t);if(!TOUCH&&Game.state==='play')lockPointer();});
+  });
+}
+
 
 /* ---------------- ground ---------------- */
 let groundFn=null;
@@ -5509,7 +5555,7 @@ const stickEl=document.getElementById('stick'),knobEl=document.getElementById('k
 const touchEl=document.getElementById('touch');
 let moveId=null,lookId=null,lookX=0,lookY=0,stickX=0,stickY=0;
 const RADIUS=52;
-function isBtn(t){return t.target&&t.target.closest&&t.target.closest('.tbtn, #teamRead, #hideAction');}
+function isBtn(t){return t.target&&t.target.closest&&t.target.closest('.tbtn, #teamRead, #hideAction, #testbar');}
 function tStart(e){
   if(Game.state!=='play')return;
   for(const t of e.changedTouches){
@@ -6821,6 +6867,7 @@ await loadBrandAssets();
 await loadArt();
 await loadShadow();
 await loadAvatars();
+if(TEST_TOOLS)testBar();
 // canvas text needs the web font before the first texture is painted
 try{await Promise.race([Promise.all([document.fonts.load('600 40px Geist','Optimum АБВ'),document.fonts.load('400 40px Geist','Optimum АБВ'),document.fonts.load('500 30px "Geist Mono"','07')]),new Promise(r=>setTimeout(r,2500))]);}catch(e){}
 loadingStatus(bi('Завантаження звуків...','Loading sounds...'));
