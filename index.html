@@ -3540,16 +3540,27 @@ function findVita(c){
 }
 /* ---- Hawk: Content Oracle. A deck pinned face down in the depot archive. ---- */
 const ORACLE={deck:null,i:0,open:false,pulled:new Set()};
+// The real Optimum mark, cut from the wordmark the game already carries (the loop is its first glyph).
+const MARK_TINT={};
+function optimumMark(x,cx,cy,w,color){
+  const logo=BRAND_IMAGES[8];if(!logo)return;
+  const t=MARK_TINT[color]||(MARK_TINT[color]=tintImage(logo,color)),k=logo.width/2000,h=w*241/446;
+  x.drawImage(t,0,92*k,446*k,241*k,cx-w/2,cy-h/2,w,h);
+}
+function optimumWord(x,px,py,w,color){
+  const logo=BRAND_IMAGES[8];if(!logo)return;
+  x.drawImage(MARK_TINT[color]||(MARK_TINT[color]=tintImage(logo,color)),px,py,w,w*logo.height/logo.width);
+}
 function drawOracleBoard(){
   const b=FIND.board;if(!b)return;const x=b.x,w=b.w,h=b.h;
   x.fillStyle='#0b0912';x.fillRect(0,0,w,h);
-  fitText(x,'pick your card',w/2,44,500,30,w-80,'#e8e4f5');
+  fitText(x,'pick your card',w/2,44,500,30,w-80,'#e8e4f5');optimumWord(x,27,22,112,'#e8e4f5');
   for(let k=0;k<18;k++){
     const cx=27+(k%6)*122,cy=66+((k/6)|0)*114;
     rrect(x,cx,cy,104,100,10);
     if(ORACLE.pulled.has(k)){x.fillStyle='#100d1a';x.fill();x.fillStyle='#4a4268';x.beginPath();x.arc(cx+52,cy+12,4,0,7);x.fill();continue;}
     const gr=x.createLinearGradient(cx,cy,cx,cy+100);gr.addColorStop(0,'#2a2150');gr.addColorStop(1,'#171230');x.fillStyle=gr;x.fill();
-    x.strokeStyle='#9a86ea';x.lineWidth=4;x.beginPath();x.arc(cx+42,cy+50,11,0,7);x.stroke();x.beginPath();x.arc(cx+62,cy+50,11,0,7);x.stroke();
+    optimumMark(x,cx+52,cy+50,62,'#b6a6f5');
   }
   b.done();
 }
@@ -3608,7 +3619,7 @@ function oracleWire(){
   document.getElementById('oNext').onclick=()=>{ORACLE.i++;ORACLE.open=false;Snd.key();redrawScreen&&redrawScreen();};
   if(ORACLE.open){cv.style.display='none';return;}
   const gr=x.createLinearGradient(0,0,560,300);gr.addColorStop(0,'#2d2358');gr.addColorStop(1,'#15102b');x.fillStyle=gr;x.fillRect(0,0,560,300);
-  x.strokeStyle='#9a86ea';x.lineWidth=7;x.beginPath();x.arc(258,118,30,0,7);x.stroke();x.beginPath();x.arc(302,118,30,0,7);x.stroke();
+  optimumMark(x,280,118,150,'#b6a6f5');
   fitText(x,bi('✦ зітри, щоб відкрити ✦','✦ scratch to reveal ✦'),280,224,500,26,480,'#cfc6f5');
   let down=false,last=null,moves=0;
   const at=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*560/r.width,(e.clientY-r.top)*300/r.height];};
