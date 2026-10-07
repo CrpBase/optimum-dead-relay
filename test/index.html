@@ -3607,7 +3607,7 @@ function findArena(){
   // pink blocks on the grass: health, if you live long enough to pick it up
   for(const [x,y,z] of [[0,0,0],[.1,0,0],[0,0,.1],[.1,0,.1],[.05,.1,.05],[.2,0,.05]])bbox((x+z)*10%2?PK:P2,.1,.1,.1,X+1.25+x,.05+y,6.95+z,0);
   // back wall: the Optimum mark in white blocks, cut from the real logo
-  bbox(BR,3.78,2.75,.12,X,1.375,9.83,0);
+  bbox(BR,3.78,3.0,.12,X,1.5,9.83,0);   // right up to the ceiling, so the lettering never runs off the brown
   const logo=BRAND_IMAGES[8];
   if(logo){
     const C=26,Rw=14,c=cvs(C,Rw),x=c.getContext('2d'),k=logo.width/2000;
@@ -3618,7 +3618,7 @@ function findArena(){
   const txt=findTex(132,34,(x,w,h)=>{x.clearRect(0,0,w,h);x.fillStyle='#f2f0ea';x.textAlign='center';x.font='bold 15px monospace';x.fillText('POWERED',w/2,14);x.fillText('BY RLNC',w/2,31);x.textAlign='left';});
   txt.t.magFilter=THREE.NearestFilter;txt.t.minFilter=THREE.NearestFilter;txt.t.generateMipmaps=false;
   const tm=new THREE.Mesh(new THREE.PlaneGeometry(1.9,.49),new THREE.MeshStandardMaterial({map:txt.t,alphaTest:.5,roughness:.9}));
-  tm.position.set(X,2.68,9.76);tm.rotation.y=Math.PI;world.add(tm);
+  tm.position.set(X,2.66,9.76);tm.rotation.y=Math.PI;world.add(tm);
   // name board on the counter front and the maker's sticker beside it
   const nm=findTex(160,26,(x,w,h)=>{x.fillStyle='#2b2a30';x.fillRect(0,0,w,h);x.fillStyle='#f2f0ea';x.textAlign='center';x.font='bold 18px monospace';x.fillText('BLOCK ARENA',w/2,20);x.textAlign='left';});
   nm.t.magFilter=THREE.NearestFilter;nm.t.minFilter=THREE.NearestFilter;nm.t.generateMipmaps=false;
