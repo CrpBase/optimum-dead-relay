@@ -6656,22 +6656,29 @@ function updatePlay(dt){
   if(capT>0){capT-=dt;if(capT<=0)capEl.classList.remove('on');}
 }
 
-function echoSegmentFree(a,b){
+function echoSegmentFree(a,b,r){
+  r=r||.42;
   const steps=Math.max(1,Math.ceil(Math.hypot(a.x-b.x,a.z-b.z)/.15));
-  for(let i=0;i<=steps;i++){const t=i/steps,x=lerp(a.x,b.x,t),z=lerp(a.z,b.z,t);if(blocked(x,z,.42,groundAt(x,z)))return false;}return true;
+  for(let i=0;i<=steps;i++){const t=i/steps,x=lerp(a.x,b.x,t),z=lerp(a.z,b.z,t);if(blocked(x,z,r,groundAt(x,z)))return false;}return true;
 }
-function echoNavAnchor(p){
+// The nearest walkable cell an Echo can use to reach or leave point p.
+// The courier is slimmer than an Echo and can stand flush against a wall, where no Echo-wide line ends:
+// for a destination (loose) a courier-wide line is enough, and failing that the closest free cell will do.
+function echoNavAnchor(p,loose){
   const [ci,cj]=Nav.cell(p.x,p.z),list=[];
   for(let dz=-2;dz<=2;dz++)for(let dx=-2;dx<=2;dx++){
     const i=ci+dx,j=cj+dz;if(!Nav.free(i,j))continue;
     const v=new THREE.Vector3(Nav.x0+i+.5,groundAt(p.x,p.z),Nav.z0+j+.5);
     list.push({v,d:Math.hypot(v.x-p.x,v.z-p.z)});
   }
-  list.sort((a,b)=>a.d-b.d);return list.find(a=>echoSegmentFree(p,a.v))?.v||null;
+  list.sort((a,b)=>a.d-b.d);
+  const strict=list.find(a=>echoSegmentFree(p,a.v));if(strict)return strict.v;
+  const slim=list.find(a=>echoSegmentFree(p,a.v,.3));if(slim)return slim.v;
+  return loose&&list.length?list[0].v:null;
 }
 function echoRoute(from,to){
   if(QUEST&&shadowZone(to.x,to.z,.5))return null;   // the shadow room is closed to Echoes; do not search the whole map for a way in
-  const start=echoNavAnchor(from),end=echoNavAnchor(to);if(!start||!end)return null;
+  const start=echoNavAnchor(from),end=echoNavAnchor(to,true);if(!start||!end)return null;
   const path=Nav.path(start,end);if(!path)return null;
   return [start,...path];
 }
@@ -6739,6 +6746,7 @@ function chooseEchoSearch(e){
   const point=new THREE.Vector3(last.x+heading.x*distance-heading.z*side,0,last.z+heading.z*distance+heading.x*side);
   if(QUEST&&clamp(Math.floor((point.x+26)/92),0,2)!==e.homeSector)continue;
   if(blocked(point.x,point.z,.55,0)||(QUEST&&shadowZone(point.x,point.z,.5)))continue;
+  if(Math.hypot(point.x-e.g.position.x,point.z-e.g.position.z)<2.5)continue;   // already standing there
   const path=echoRoute(e.g.position,point);if(!path)continue;
   const hidden=!los(point,P.pos);options.push({point,score:(hidden?12:0)-Math.abs(distance-10)-Math.random()*3});
  }
@@ -6756,13 +6764,19 @@ function updateEcho(e,dt){
     const movement=new THREE.Vector3().subVectors(P.pos,e.lastSeen);movement.y=0;if(movement.length()>.03)e.lastHeading=movement.normalize();
     e.lastSeen.copy(P.pos);e.searchT=0;
   }else if(e.state==='hunt'){
-    e.state='search';e.searchT=10;e.searchTarget=chooseEchoSearch(e);e.searchMove=3;e.path=null;e.repath=0;
+    // Lost sight: go to where the courier was last seen first, and only then look around.
+    // Sight flickers at doorways and at the edge of range, and the target must not jump when it does.
+    e.state='search';e.searchT=10;e.path=null;e.repath=0;
+    e.searchAge=0;
+    if(!HIDE.active&&echoRoute(pos,e.lastSeen)){e.searchTarget=e.lastSeen.clone();e.searchMove=6;}
+    else{e.searchTarget=chooseEchoSearch(e);e.searchMove=3;}
   }
 
   if(e.state==='search'){
-    e.searchT-=dt;e.searchMove=(e.searchMove||0)-dt;
-    if(e.searchMove<=0||!e.searchTarget||e.g.position.distanceTo(e.searchTarget)<1.2){
-      e.searchTarget=chooseEchoSearch(e)||e.home;e.searchMove=3.5;e.path=null;e.repath=0;
+    e.searchT-=dt;e.searchMove=(e.searchMove||0)-dt;e.searchAge=(e.searchAge||0)+dt;
+    // a finished route counts as arriving, once the Echo has had a moment to set off
+    if(e.searchMove<=0||!e.searchTarget||e.g.position.distanceTo(e.searchTarget)<1.2||(e.searchAge>.5&&e.path&&e.pi>=e.path.length)){
+      e.searchTarget=chooseEchoSearch(e)||e.home;e.searchMove=3.5;e.searchAge=0;e.path=null;e.repath=0;
     }
     if(e.searchT<=0){
       e.state='patrol';
@@ -6776,16 +6790,19 @@ function updateEcho(e,dt){
   if(e.state==='hunt')target=P.pos;
   else if(e.state==='search')target=e.searchTarget||e.lastSeen;
   else{
-    if(!e.wander||Math.hypot(pos.x-e.wander.x,pos.z-e.wander.z)<1.0||e.stuckTime>1.2){
+    // a finished route counts as arriving: the last free cell can sit a step short of the point itself
+    if(!e.wander||Math.hypot(pos.x-e.wander.x,pos.z-e.wander.z)<1.0||e.stuckTime>1.2||(e.path&&e.pi>=e.path.length)){
       e.wander=nextEchoPatrol(e);e.path=null;e.repath=0;e.stuckTime=0;
     }
     target=e.wander||e.home;
   }
   e.repath-=dt;
-  if(e.repath<=0){
+  if(e.repath<=0&&!e.closing){
     e.path=echoRoute(pos,target);e.pi=0;
     e.repath=e.state==='hunt'?0.55:1.5;
     if(!e.path&&e.state==='patrol'){e.wander=null;e.repath=.3;}
+    // A fresh route starts at the nearest cell centre, which is often a step behind. Skip what is already passed.
+    if(e.path)for(let k=0;k<2&&e.pi+1<e.path.length&&echoSegmentFree(pos,e.path[e.pi+1]);k++)e.pi++;
   }
 
   let dir=new THREE.Vector3();
@@ -6799,7 +6816,11 @@ function updateEcho(e,dt){
     dir.set(0,0,0);
   }
 
+  e.closing=false;
   if(e.state==='hunt'&&canSee&&d<8&&echoSegmentFree(pos,P.pos))dir.subVectors(P.pos,pos).setY(0).normalize();
+  // The route ends at the nearest free cell; a courier pressed to a wall is still a step away. Close that step,
+  // and hold the route while doing it so a re-plan does not pull the Echo back to the cell centre.
+  else if(e.state==='hunt'&&canSee&&d<3.2&&e.stuckTime<.4&&(!e.path||e.pi>=e.path.length)&&echoSegmentFree(pos,P.pos,.3)){dir.subVectors(P.pos,pos).setY(0).normalize();e.closing=true;}
   e.cool-=dt;
   if(e.state==='hunt'&&d<5.5&&e.cool<=0)e.lunge=Math.min(1,e.lunge+dt*1.2);
   else e.lunge=Math.max(0,e.lunge-dt*1.6);
