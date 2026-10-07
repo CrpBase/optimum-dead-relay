@@ -300,15 +300,6 @@
   .find .fhead img+img{margin-left:-34px}
   .find .fhead h2{margin-top:6px}
   .find a.pill{text-decoration:none;display:inline-flex;align-items:center}
-  .ocard{position:relative;width:min(560px,100%);aspect-ratio:560/300;margin-top:18px;border-radius:14px;overflow:hidden;background:#f1ecdf}
-  .ocard canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair;transition:opacity .45s;pointer-events:auto}
-  .oface{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:22px 28px;color:#17151f}
-  .ocat{font:11px var(--mono);letter-spacing:.3em;color:#6a4fd0}
-  .oface p{font-size:clamp(16px,2.5vw,23px);line-height:1.3;margin:10px 0 0;font-weight:500}
-  .term{margin-top:16px;background:#03110a;color:#8dffb0;font:13px/1.5 var(--mono);padding:14px 16px;border:1px solid #1f5a39;border-radius:6px;height:min(250px,34vh);overflow:auto;white-space:pre-wrap;pointer-events:auto}
-  .tcmd{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.tcmd .pill{font-family:var(--mono)}.pill[disabled]{opacity:.35;cursor:default}
-  .gopts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;max-width:560px}.gopts .pill{text-align:center}
-  .gopts .pill.ok{background:#64E27F;color:#0c1a10;opacity:1}.gopts .pill.bad{background:#b3261e;color:#fff;opacity:1}
   .finds{margin-top:26px}.frow{display:flex;gap:12px;align-items:center;padding:9px 0;font-size:14px;line-height:1.4;color:var(--steel)}
   .frow img,.frow .q{width:40px;height:40px;border-radius:50%;flex-shrink:0;object-fit:cover}.frow img+img{margin-left:-24px}
   .frow .q{display:grid;place-items:center;background:#ffffff14;font-family:var(--mono);color:#B87CFF}
@@ -3370,6 +3361,7 @@ function buildShadowRoom(){
     dirt(x,w,h,4,.12);
   })}));
   plate.position.set(58.55,1.5,15.878);plate.rotation.y=Math.PI;world.add(plate);
+  QUEST.items.push({type:'find',id:'cipher',sector:0,aim:new THREE.Vector3(58.55,1.5,15.83),label:()=>bi('Відкрити Cipher в X','Open Cipher on X')});
   if(!S.pieces)return;
   /* ---- the sculpture and its shadow ---- */
   const FH=S.height,FW=FH*S.asp,R=artRng(515),parts=[],zw=15.856;
@@ -3449,7 +3441,7 @@ const FINDS=[
     hint:['Сектор C, Архів депо (C04). Дошка з картками сорочкою догори.','Sector C, Depot archive (C04). A board of cards pinned face down.'],
     url:'https://optimum-content-oracle.netlify.app',link:['Відкрити колоду на 100 карток','Open the deck of 100']}
 ];
-const FOUND=new Set(),FIND_POS={},FIND={tex:[],told:false,board:null,open:null};
+const FOUND=new Set(),FIND_POS={},FIND={tex:[],told:false,board:null,pending:null};
 function findsReset(){for(const t of FIND.tex)t.dispose();FIND.tex=[];for(const k of Object.keys(FIND_POS))delete FIND_POS[k];FIND.board=null;}
 function findTex(w,h,paint){const d=dynTex(w,h);paint(d.x,w,h);d.done();FIND.tex.push(d.t);return d;}
 function findById(id){return FINDS.find(f=>f.id===id);}
@@ -3518,12 +3510,12 @@ function findTour(c){
   });
   const globe=new THREE.Mesh(new THREE.SphereGeometry(.15,20,14),new THREE.MeshStandardMaterial({map:gt.t,roughness:.5}));
   globe.position.set(gp.x,gp.y+.33,gp.z);globe.rotation.z=.4;world.add(globe);
-  findItem('tour',s.p(0,.3,.3),['Оглянути валізу','Look at the suitcase']);
+  findItem('tour',s.p(0,.3,.3),['Відкрити Optimum World Tour','Open Optimum World Tour']);
 }
 /* ---- Vita Zhuk: NODEOS. One workstation in the control room that never shut down. ---- */
 function findVita(c){
   const g=c.g,d=g.at(7.4,11.89,2);
-  PR.desk(d,{kb:true,paper:true});PR.chair(g.at(7.5,10.8,2),.3);
+  PR.desk(d,{kb:true,paper:true});PR.chair(g.at(7.5,10.3,0),.3);
   const m=d.at(.22,.02,0).lift(.78);
   m.b(M.pCream,.44,.36,.4,0,0,.22);m.b(M.pDark,.36,.28,.02,0,.04,.425);
   const scr=findTex(330,250,(x,w,h)=>{
@@ -3541,10 +3533,9 @@ function findVita(c){
   d.c(M.steel,.06,.004,-.14,.783,.6,'y',14);d.c(M.steel,.06,.004,-.1,.788,.5,'y',14);
   d.b(M.pCream,.2,.42,.44,-.5,.78,.22);d.b(M.black,.16,.02,.01,-.5,1.08,.445);
   d.c(M.rub,.012,1.3,.1,.02,.8,'x',5);
-  findItem('vita',m.p(0,.5,.2),['Сісти за термінал NODEOS','Sit down at the NODEOS terminal']);
+  findItem('vita',m.p(0,.5,.2),['Відкрити симулятор NODEOS','Open the NODEOS simulator']);
 }
 /* ---- Hawk: Content Oracle. A deck pinned face down in the depot archive. ---- */
-const ORACLE={deck:null,i:0,open:false,pulled:new Set()};
 // The real Optimum mark, cut from the wordmark the game already carries (the loop is its first glyph).
 const MARK_TINT={};
 function optimumMark(x,cx,cy,w,color){
@@ -3563,7 +3554,6 @@ function drawOracleBoard(){
   for(let k=0;k<18;k++){
     const cx=27+(k%6)*122,cy=66+((k/6)|0)*114;
     rrect(x,cx,cy,104,100,10);
-    if(ORACLE.pulled.has(k)){x.fillStyle='#100d1a';x.fill();x.fillStyle='#4a4268';x.beginPath();x.arc(cx+52,cy+12,4,0,7);x.fill();continue;}
     const gr=x.createLinearGradient(cx,cy,cx,cy+100);gr.addColorStop(0,'#2a2150');gr.addColorStop(1,'#171230');x.fillStyle=gr;x.fill();
     optimumMark(x,cx+52,cy+50,62,'#b6a6f5');
   }
@@ -3575,176 +3565,46 @@ function findHawk(c){
   FIND.board=findTex(768,416,()=>{});drawOracleBoard();
   findPlane(FIND.board,2.5,1.36,L.p(0,.034,1.89),L.face('f'));
   const st=avatarSticker('hawk',.27);st.position.copy(L.p(1.1,.04,2.46));st.rotation.y=L.face('f');st.rotation.z=-.14;world.add(st);
-  findItem('hawk',L.p(0,.25,1.8),['Витягнути картку','Pull a card']);
+  findItem('hawk',L.p(0,.25,1.8),['Відкрити Content Oracle','Open Content Oracle']);
 }
 
-/* ================= what each one opens ================= */
-function findShell(f,body,wire){
-  Game.state='find';FIND.open=f.id;unlockPointer();
+/* ================= using one: it takes the player to the maker's own project ================= */
+// Echoes break off the way they do at a shelter, so nobody comes back from a maker's page into a chase.
+function echoesBackOff(){
+  if(!QUEST)return;
+  for(const e of ECHOES){
+    const near=e.g.position.distanceTo(P.pos)<18;
+    if(e.state==='patrol'&&!near)continue;
+    e.state='patrol';e.searchT=0;e.lunge=0;e.cool=0;e.path=null;e.repath=0;e.stuckTime=0;e.wander=null;
+    if(!near)continue;
+    // it has walked off to the far end of its sector by the time the courier looks up again
+    let far=null,fd=-1;
+    for(const p of QUEST.patrol[e.homeSector]||[]){const d=Math.hypot(p.x-P.pos.x,p.z-P.pos.z);if(d>fd){fd=d;far=p;}}
+    if(far){e.g.position.set(far.x,0,far.z);e.lastSeen.copy(far);}
+  }
+  P.grace=Game.time+6;Snd.silenceMonster();
+}
+function findVisit(id){
+  const f=findById(id);if(!f||Game.state!=='play')return;
+  findMark(id);echoesBackOff();
+  Game.pause();          // the delivery clock waits while the player is away
+  FIND.pending=f;        // opened by the key press or, on a phone, when the finger lifts: browsers only allow it then
+}
+function findLaunch(){
+  const f=FIND.pending;if(!f)return;FIND.pending=null;
+  let w=null;try{w=window.open(f.url,'_blank');if(w)w.opener=null;}catch(e){}
+  if(!w)findCard(f);     // the browser refused a new tab: offer the link to tap
+}
+function findCard(f){
+  Game.state='find';unlockPointer();
   const draw=()=>{
     screen(`<section class="find"><div class="fhead">${f.av.map(a=>`<img src="${AV_SRC[a]}" alt="">`).join('')}<div><div class="kicker">${bi('ХОВАНКА','HIDDEN')} ${FOUND.size}/${FINDS.length} · ${f.handle}</div><h2>${bi(f.title[0],f.title[1])}</h2></div></div>
-      ${body()}
       <div class="cta"><a class="pill primary" href="${f.url}" target="_blank" rel="noopener">${bi(f.link[0],f.link[1])} ↗</a><button class="pill quiet" id="closeFind">${bi('Повернутись','Return')}</button></div></section>`,true);
     document.getElementById('closeFind').onclick=closeFind;
-    if(wire)wire();
   };
   redrawScreen=draw;draw();
 }
-function closeFind(){if(Game.state!=='find')return;redrawScreen=null;FIND.open=null;Game.state='play';hideScreen();lockPointer();}
-function openFind(id){({hawk:openOracle,vita:openNodeos,tour:openTour})[id]?.();}
-
-/* ---- Content Oracle: pull a card, scratch it ---- */
-const ORACLE_CARDS=[
-  ['tech','Чому друга копія не лагодить втрачений пакет, а кодований шматок лагодить?','Why does a second copy not fix a lost packet while a coded piece does?'],
-  ['tech','Gossip проти RLNC: намалюй шлях одного блока в обох мережах.','Gossip versus RLNC: draw the path of one block through both networks.'],
-  ['tech','Поясни Flexnode чотирма реченнями людині, яка ніколи не ставила вузол.','Explain a Flexnode in four sentences to someone who has never run a node.'],
-  ['curious','Що станеться з мережею, якщо кожен вузол пересилає все всім?','What happens to a network when every node forwards everything to everyone?'],
-  ['curious','Скільки разів той самий блок приходить до одного валідатора? Порахуй і покажи.','How many times does the same block reach one validator? Count it and show it.'],
-  ['curious','Як пояснити mump2p другові, який не знає слова p2p?','How would you explain mump2p to a friend who has never heard of p2p?'],
-  ['contrarian','Швидша мережа важить більше за швидший консенсус. Доведи або спростуй.','A faster network matters more than faster consensus. Prove it or break it.'],
-  ['contrarian','Більше копій не робить доставку надійнішою. Чому?','More copies do not make delivery more reliable. Why?'],
-  ['contrarian','Затримка теж має ціну. Хто її платить у блокчейні?','Latency has a price too. Who pays it on a blockchain?'],
-  ['visual','Одна картинка: темна станція без Optimum і галявина з Optimum.','One picture: the dark station without Optimum and the meadow with it.'],
-  ['visual','Покажи втрату пакета як порвану листівку, а RLNC як мозаїку, що складається з будь-яких шматків.','Show packet loss as a torn postcard and RLNC as a mosaic that completes from any pieces.'],
-  ['visual','П’ятнадцять секунд відео: один блок, сто копій, одна черга.','Fifteen seconds of video: one block, a hundred copies, one queue.']
-];
-function openOracle(){
-  findMark('hawk');
-  if(!ORACLE.deck){ORACLE.deck=ORACLE_CARDS.map((_,i)=>i).sort(()=>Math.random()-.5);ORACLE.i=0;ORACLE.open=false;}
-  findShell(findById('hawk'),()=>{
-    const cd=ORACLE_CARDS[ORACLE.deck[ORACLE.i%ORACLE.deck.length]];
-    return `<div class="body">${bi('Витягни картку, зітри захисний шар і забери кут для допису про Optimum.','Pull a card, scratch it and take an angle for a post about Optimum.')}</div>
-      <div class="ocard"><div class="oface"><div class="ocat">${cd[0].toUpperCase()}</div><p>${bi(cd[1],cd[2])}</p></div><canvas id="scratch" width="560" height="300"></canvas></div>
-      <div class="tcmd"><button class="pill quiet" id="oNext">${bi('Ще картку','Draw another')}</button></div>
-      <div class="note">${bi('Тут дванадцять кутів, написаних для цієї гри. Справжня колода на 100 карток чекає в Content Oracle від Hawk.','These twelve angles were written for this game. The real deck of 100 waits in Hawk’s Content Oracle.')}</div>`;
-  },oracleWire);
-}
-function oracleWire(){
-  const cv=document.getElementById('scratch'),x=cv.getContext('2d');
-  document.getElementById('oNext').onclick=()=>{ORACLE.i++;ORACLE.open=false;Snd.key();redrawScreen&&redrawScreen();};
-  if(ORACLE.open){cv.style.display='none';return;}
-  const gr=x.createLinearGradient(0,0,560,300);gr.addColorStop(0,'#2d2358');gr.addColorStop(1,'#15102b');x.fillStyle=gr;x.fillRect(0,0,560,300);
-  optimumMark(x,280,118,150,'#b6a6f5');
-  fitText(x,bi('✦ зітри, щоб відкрити ✦','✦ scratch to reveal ✦'),280,224,500,26,480,'#cfc6f5');
-  let down=false,last=null,moves=0;
-  const at=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*560/r.width,(e.clientY-r.top)*300/r.height];};
-  const rub=e=>{
-    if(ORACLE.open)return;
-    const p=at(e);x.globalCompositeOperation='destination-out';x.lineWidth=54;x.lineCap='round';x.lineJoin='round';
-    x.beginPath();x.moveTo(...(last||p));x.lineTo(p[0]+.1,p[1]+.1);x.stroke();last=p;
-    if(++moves%6===0){
-      const a=x.getImageData(0,0,560,300).data;let clear=0;for(let i=3;i<a.length;i+=64)if(a[i]<40)clear++;
-      if(clear/(a.length/64)>.5){
-        ORACLE.open=true;cv.style.opacity='0';cv.style.pointerEvents='none';Snd.pickup();
-        const free=[];for(let k=0;k<18;k++)if(!ORACLE.pulled.has(k))free.push(k);
-        if(!free.length)ORACLE.pulled.clear();else ORACLE.pulled.add(free[(Math.random()*free.length)|0]);
-        drawOracleBoard();
-      }
-    }
-  };
-  cv.onpointerdown=e=>{down=true;last=null;try{cv.setPointerCapture(e.pointerId);}catch(_){}rub(e);e.preventDefault();};
-  cv.onpointermove=e=>{if(down){rub(e);e.preventDefault();}};
-  cv.onpointerup=cv.onpointercancel=()=>{down=false;last=null;};
-}
-
-/* ---- NODEOS: from a flooded gossip mesh to RLNC in four commands ---- */
-const NODE={log:null,step:0,busy:false};
-const NODE_BOOT=['NODEOS 2.04 · legacy relay workstation','operator: vita','[WARN] Peer retransmission delayed (RTT 2,100ms). Deadline missed again!',"type 'status' to look at the mesh or 'tune' to add peers"];
-const NODE_SCRIPT={
-  status:['[NET] gossip mesh: 8 peers','[NET] packet loss 31% · duplicate packets 64%','[NET] every lost packet restarts the transfer'],
-  tune:['[TUNE] Increasing Mesh Degree: 8 -> 32 peers...','[WARNING] Channel flooded! 920 duplicate packets detected (88% waste).','[ERROR] CPU load 98%, memory buffer overflow. Manual tuning failed.',"type 'diagnose' to identify root cause"],
-  diagnose:['==== DIAGNOSTIC REPORT ====','root cause: peers forward whole copies of the same block','more peers means more copies, and the channel is already full',"fix: 'rlnc' sends coded pieces instead of copies"],
-  rlnc:['[RLNC] switching relay to Random Linear Network Coding','[RLNC] each hop recodes what it holds · duplicates 0%','[RLNC] block rebuilt from the first pieces that arrived','[OK] Flexnode online. Deadline met.']
-};
-function openNodeos(){
-  findMark('vita');
-  if(!NODE.log||NODE.step>=3){NODE.log=NODE_BOOT.slice();NODE.step=0;NODE.busy=false;}
-  findShell(findById('vita'),()=>{
-    const can={status:true,tune:true,diagnose:NODE.step>=1,rlnc:NODE.step>=2};
-    return `<pre class="term" id="nlog"></pre>
-      <div class="tcmd">${Object.keys(NODE_SCRIPT).map(k=>`<button class="pill quiet" data-c="${k}"${can[k]&&!NODE.busy&&NODE.step<3?'':' disabled'}>&gt; ${k}</button>`).join('')}</div>
-      <div class="note">${bi('Короткий запуск за мотивами NODEOS Archive. У справжньому симуляторі Vita Zhuk команди набираєш сам, з клавіатури, на захаращеному столі з двотисячних.','A short run in the spirit of NODEOS Archive. In Vita Zhuk’s real simulator you type the commands yourself, at a cluttered desk from the 2000s.')}</div>`;
-  },nodeWire);
-}
-function nodeWire(){
-  const pre=document.getElementById('nlog');pre.textContent=NODE.log.join('\n');pre.scrollTop=1e6;
-  UI.card.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>nodeRun(b.dataset.c));
-}
-function nodeRun(cmd){
-  if(NODE.busy)return;NODE.busy=true;NODE.log.push('> '+cmd);
-  const lines=NODE_SCRIPT[cmd],show=()=>{const pre=FIND.open==='vita'&&document.getElementById('nlog');if(pre){pre.textContent=NODE.log.join('\n');pre.scrollTop=1e6;}};
-  show();UI.card.querySelectorAll('[data-c]').forEach(b=>b.disabled=true);
-  lines.forEach((l,i)=>setTimeout(()=>{
-    NODE.log.push(l);Snd.key();show();
-    if(i===lines.length-1){
-      NODE.busy=false;
-      if(cmd==='tune')NODE.step=Math.max(NODE.step,1);if(cmd==='diagnose')NODE.step=Math.max(NODE.step,2);if(cmd==='rlnc'){NODE.step=3;Snd.pickup();}
-      if(FIND.open==='vita'&&redrawScreen)redrawScreen();
-    }
-  },280*(i+1)));
-}
-
-/* ---- World Tour: five rounds of where-is-this ---- */
-const TOUR_CITIES={
-  seoul:['Сеул','Seoul',37.57,126.98],singapore:['Сінгапур','Singapore',1.35,103.82],kyiv:['Київ','Kyiv',50.45,30.52],sf:['Сан-Франциско','San Francisco',37.77,-122.42],
-  dubai:['Дубай','Dubai',25.2,55.27],lisbon:['Лісабон','Lisbon',38.72,-9.14],tokyo:['Токіо','Tokyo',35.68,139.69],istanbul:['Стамбул','Istanbul',41.01,28.98],
-  nyc:['Нью-Йорк','New York',40.71,-74.01],amsterdam:['Амстердам','Amsterdam',52.37,4.9],hk:['Гонконг','Hong Kong',22.32,114.17],bangkok:['Бангкок','Bangkok',13.75,100.5],
-  paris:['Париж','Paris',48.86,2.35],ba:['Буенос-Айрес','Buenos Aires',-34.6,-58.38]
-};
-const TOUR_CLUES=[
-  ['seoul','Річка Хан ділить місто навпіл. На горі Намсан стоїть вежа, на південному березі район Каннам.','The Han River cuts the city in two. A tower stands on Namsan, and Gangnam lies on the south bank.'],
-  ['singapore','Місто-держава за крок від екватора. Три вежі тримають на даху корабель.','A city-state a step from the equator. Three towers carry a ship on their roof.'],
-  ['kyiv','Золоті бані над Дніпром. Тут найглибша станція метро у світі.','Golden domes above the Dnipro. The deepest metro station in the world is here.'],
-  ['sf','Червоний міст у тумані, круті пагорби й канатний трамвай.','A red bridge in the fog, steep hills and a cable car.'],
-  ['dubai','Пустеля, затока й найвища вежа планети.','Desert, a gulf and the tallest tower on the planet.'],
-  ['lisbon','Жовтий трамвай 28 дереться вузькими вулицями над океаном.','Yellow tram 28 climbs narrow streets above the ocean.'],
-  ['tokyo','Найлюдніший перехід у світі, а в ясний день із хмарочосів видно Фудзі.','The busiest crossing in the world, and on a clear day Fuji shows from the towers.'],
-  ['istanbul','Місто на двох континентах. Між ними протока й пороми.','A city on two continents, with a strait and ferries between them.'],
-  ['nyc','Жовті таксі, парк посеред хмарочосів і статуя на острові.','Yellow cabs, a park among skyscrapers and a statue on an island.'],
-  ['amsterdam','Канали, велосипеди й вузькі будинки з гаками на фронтонах.','Canals, bicycles and narrow houses with hooks on their gables.']
-];
-const TOUR={rounds:null,r:0,score:0,pick:null,done:false};
-function tourKm(a,b){
-  const A=TOUR_CITIES[a],B=TOUR_CITIES[b],k=Math.PI/180,dl=(B[2]-A[2])*k,dn=(B[3]-A[3])*k;
-  const h=Math.sin(dl/2)**2+Math.cos(A[2]*k)*Math.cos(B[2]*k)*Math.sin(dn/2)**2;return 12742*Math.asin(Math.sqrt(h));
-}
-function tourNew(){
-  const names=Object.keys(TOUR_CITIES);
-  TOUR.rounds=TOUR_CLUES.slice().sort(()=>Math.random()-.5).slice(0,5).map(cl=>{
-    const others=names.filter(n=>n!==cl[0]).sort(()=>Math.random()-.5).slice(0,3);
-    return {city:cl[0],ua:cl[1],en:cl[2],opts:[cl[0],...others].sort(()=>Math.random()-.5)};
-  });
-  TOUR.r=0;TOUR.score=0;TOUR.pick=null;TOUR.done=false;
-}
-const tourNum=n=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
-function openTour(){
-  findMark('tour');
-  if(!TOUR.rounds||TOUR.done)tourNew();
-  findShell(findById('tour'),()=>{
-    const tail=`<div class="note">${bi('П’ять раундів за мотивами справжньої гри. У Optimum World Tour від Bobyhamster і Tynar 113 локацій, 113 фактів про команду й Mumbassadors і лідерборд.','Five rounds in the spirit of the real game. Optimum World Tour by Bobyhamster and Tynar has 113 locations, 113 facts about the team and the Mumbassadors, and a leaderboard.')}</div>`;
-    if(TOUR.done)return `<div class="body">${bi('Тур завершено. Твій рахунок: ','Tour complete. Your score: ')}<b>${tourNum(TOUR.score)}</b> / 25 000</div>
-      <div class="tcmd"><button class="pill quiet" id="tAgain">${bi('Ще раз','Play again')}</button></div>${tail}`;
-    const rd=TOUR.rounds[TOUR.r],nm=k=>bi(TOUR_CITIES[k][0],TOUR_CITIES[k][1]);
-    let res='';
-    if(TOUR.pick){
-      const km=tourKm(TOUR.pick,rd.city);
-      res=`<div class="body">${TOUR.pick===rd.city?bi('Влучив. ','Spot on. ')+'+5 000':bi('Це ','That was ')+nm(rd.city)+bi('. Промах на ','. Off by ')+tourNum(km)+bi(' км: +',' km: +')+tourNum(5000*Math.exp(-km/2500))}</div>
-        <div class="tcmd"><button class="pill quiet" id="tNext">${TOUR.r<4?bi('Далі','Next'):bi('Підсумок','Result')}</button></div>`;
-    }
-    return `<div class="kicker" style="margin-top:14px">${bi('РАУНД','ROUND')} ${TOUR.r+1}/5 · ${tourNum(TOUR.score)}</div>
-      <div class="body" style="margin-top:8px">${bi(rd.ua,rd.en)}</div>
-      <div class="gopts">${rd.opts.map(k=>`<button class="pill quiet${TOUR.pick?(k===rd.city?' ok':k===TOUR.pick?' bad':''):''}" data-g="${k}"${TOUR.pick?' disabled':''}>${nm(k)}</button>`).join('')}</div>${res}${TOUR.r===0&&!TOUR.pick?tail:''}`;
-  },tourWire);
-}
-function tourWire(){
-  UI.card.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
-    if(TOUR.pick)return;const rd=TOUR.rounds[TOUR.r];TOUR.pick=b.dataset.g;
-    TOUR.score+=TOUR.pick===rd.city?5000:Math.round(5000*Math.exp(-tourKm(TOUR.pick,rd.city)/2500));
-    TOUR.pick===rd.city?Snd.pickup():Snd.key();redrawScreen&&redrawScreen();
-  });
-  const nx=document.getElementById('tNext');if(nx)nx.onclick=()=>{TOUR.pick=null;if(TOUR.r<4)TOUR.r++;else TOUR.done=true;redrawScreen&&redrawScreen();};
-  const ag=document.getElementById('tAgain');if(ag)ag.onclick=()=>{tourNew();redrawScreen&&redrawScreen();};
-}
+function closeFind(){if(Game.state!=='find')return;redrawScreen=null;Game.state='play';hideScreen();lockPointer();}
 // the list in the journal
 function findsJournal(){
   return `<div class="finds"><div class="kicker">${bi('ХОВАНКИ СПІЛЬНОТИ','COMMUNITY HIDE AND SEEK')} · ${FOUND.size}/${FINDS.length}</div>${FINDS.map(f=>FOUND.has(f.id)?
@@ -3898,7 +3758,7 @@ function fragmentAt(room,x,y,z,aim){
   bbox(M.pOrange,.46,.3,.03,x,y+.24,z-.17,0);bbox(M.black,.4,.24,.01,x,y+.24,z-.152,0);
   bquad(M.pool.blue,x,y+.118,z,'up',.9,.9);
   const sh={g,core,body,sp,bc,got:false,coded:false,sector:room.sector,room,baseY:y+.25,aim:aim||new THREE.Vector3(x,y+.25,z)};
-  sh.marker=makeMarker(sh.aim,0x9fd4ff);
+  sh.marker=makeMarker(new THREE.Vector3(x,y+.3,z),0x9fd4ff);   // on the fragment, even when it is aimed at from further out
   SHARDS.push(sh);return sh;
 }
 /* ---- battery dock on a wall ---- */
@@ -4229,7 +4089,7 @@ const ROOMS={
     PR.counter(g.at(3.7,4.1,0),7.0);
     g.b(M.steel,.5,.04,.3,5.0,1.0,4.86);
     c.frag(5.0,4.86,1.04,5.0,5.6);
-    PR.desk(L(6.2),{crt:'crt_term',glow:'green',kb:true,paper:true});PR.chair(g.at(1.25,6.2,3));
+    PR.desk(L(6.2),{crt:'crt_term',glow:'green',kb:true,paper:true});PR.chair(g.at(1.85,6.2,1));
     PR.safe(L(7.5));
     PR.bench(F(2.0));g.d('prices',2.0,2.0,.117,'f',.8,.96);
     posterBox(F(11.0),0,true,1.2,.75);PR.bin(F(8.9));
@@ -4241,7 +4101,7 @@ const ROOMS={
   },
   A02(c){ // security
     const {g,W,h,F,B,L,R}=c;
-    PR.console(R(4.6),3.2,['crt_cam','crt_static','crt_cam','crt_cam','crt_static']);PR.chair(g.at(12.5,4.6,1));
+    PR.console(R(4.6),3.2,['crt_cam','crt_static','crt_cam','crt_cam','crt_static']);PR.chair(g.at(11.9,4.6,3));
     g.b(M.pDark,.08,1.26,2.5,W-.15,1.5,4.6);g.d('monwall',W-.19,2.13,4.6,'l',2.4,1.2);
     // open evidence rack, the fragment sits on the middle shelf
     const ev=L(5.4);
@@ -4254,7 +4114,7 @@ const ROOMS={
     hideAt(L(2.2));
     PR.cot(F(2.9));PR.lockers(F(10.5),4,M.pGray);
     PR.table(g.at(7.0,5.3,0),1.4,.8);g.d('news',6.8,.763,5.7,'u',.3,.4,false,.4);g.d('phone',7.4,.763,5.75,'u',.2,.2);
-    PR.chair(g.at(7.0,6.2,0));PR.chair(g.at(6.0,5.4,3));
+    PR.chair(g.at(7.0,6.8,2));PR.chair(g.at(6.0,5.4,3));
     PR.filing(B(11.0),2);g.d('cctv',12.6,1.9,.117,'f',.34,.34);g.d('board',9.2,1.75,11.883,'b',1.2,.8);
     c.patrol(9.6,6.9);c.litter(3);
   },
@@ -4276,7 +4136,7 @@ const ROOMS={
   A04(c){ // archive
     const {g,W,h,F,B,L,R}=c;
     for(const u of [10.2,11.9]){PR.shelf(g.at(u,3.0,0),1.6,2.3,'binders');PR.shelf(g.at(u,6.3,2),1.6,2.3,'binders');}
-    PR.desk(L(4.4),{paper:true});PR.chair(g.at(1.25,4.4,3));
+    PR.desk(L(4.4),{paper:true});PR.chair(g.at(1.85,4.4,1));
     PR.filing(F(1.9),4);PR.boxes(g.at(2.4,6.6,0),6);
     PR.cabinet(L(6.9),1.2,1.3,.5,M.wood,'drawers');
     PR.table(g.at(6.4,4.7,0),1.3,.7);g.d('paper',6.9,.763,5.0,'u',.2,.26,false,.5);g.d('paper',6.75,.764,5.15,'u',.2,.26,false,-.2);
@@ -4291,7 +4151,7 @@ const ROOMS={
     PR.sofa(L(3.5));
     PR.table(g.at(6.6,4.5,0),1.6,.9);g.d('news',7.0,.763,4.85,'u',.3,.4,false,.25);
     g.c(M.pWhite,.04,.09,6.2,.805,4.8,'y',8);g.c(M.pBlue,.04,.09,6.9,.805,5.2,'y',8);
-    PR.chair(g.at(6.6,5.5,0));PR.chair(g.at(5.6,4.6,3));PR.chair(g.at(7.6,4.6,1));
+    PR.chair(g.at(6.6,6.1,2));PR.chair(g.at(5.6,4.6,3));PR.chair(g.at(7.6,4.6,1));
     PR.fridge(R(3.5));PR.kitchen(R(5.7),2.4);
     c.frag(W-.42,6.4,.9,W-1.5,6.4);
     hideAt(F(2.0));
@@ -4307,7 +4167,7 @@ const ROOMS={
     g.b(M.pDark,.08,1.5,3.5,.15,1.3,4.6);g.d('track',.196,2.05,4.6,'r',3.3,1.26);
     PR.console(L(4.6),1.9,['crt_wave','crt_term','crt_wave']);
     for(const v of [3.4,4.3,5.2])PR.elecCab(R(v),.8,true);
-    PR.desk(F(10.8),{phone:true,paper:true});PR.chair(g.at(10.8,1.2,0));
+    PR.desk(F(10.8),{phone:true,paper:true});PR.chair(g.at(10.8,1.8,2));
     c.frag(11.1,.5,.78,11.1,1.6);
     hideAt(F(1.8));
     g.d('clock',9.4,2.6,.117,'f',.34,.34);g.d('hv',W-.117,2.4,4.3,'l',.3,.27);
@@ -4395,9 +4255,9 @@ const ROOMS={
   },
   B06(c){ // control room
     const {g,W,h,F,B,L,R}=c;
-    PR.console(L(4.6),3.2,['crt_term','crt_wave','crt_static','crt_cam','crt_term']);PR.chair(g.at(1.5,4.0,3));PR.chair(g.at(1.5,5.4,3));
+    PR.console(L(4.6),3.2,['crt_term','crt_wave','crt_static','crt_cam','crt_term']);PR.chair(g.at(2.1,4.0,1));PR.chair(g.at(2.1,5.4,1));
     g.b(M.pDark,.08,1.4,3.4,.15,1.45,4.6);g.d('track',.196,2.15,4.6,'r',3.2,1.22);
-    PR.console(R(4.8),2.6,['crt_static','crt_term','crt_wave','crt_cam']);PR.chair(g.at(12.4,4.8,1));
+    PR.console(R(4.8),2.6,['crt_static','crt_term','crt_wave','crt_cam']);PR.chair(g.at(11.8,4.8,3));
     PR.table(g.at(7.0,4.7,0),1.8,.9);g.d('map',7.1,.763,5.15,'u',.9,.54,false,.1);g.d('phone',6.3,.763,4.95,'u',.2,.2);
     c.frag(7.7,5.3,.76);
     hideAt(F(1.8));PR.lockers(F(11.0),4,M.pGray);
@@ -4440,7 +4300,7 @@ const ROOMS={
   C03(c){ // radio room
     const {g,W,h,F,B,L,R}=c;
     for(const v of [3.0,3.7,4.4])PR.rack(L(v),true);
-    PR.desk(R(4.8),{phone:true});PR.radio(R(4.8).at(-.1,.1,0).lift(.78));PR.chair(g.at(12.7,4.8,1));
+    PR.desk(R(4.8),{phone:true});PR.radio(R(4.8).at(-.1,.1,0).lift(.78));PR.chair(g.at(12.1,4.8,3));
     for(const v of [3.2,6.3])g.c(M.rub,.03,h-1.3,W-.2,1.3+(h-1.3)/2,v,'y',6);
     PR.table(g.at(6.6,5.0,0),1.4,.8);g.d('news',7.0,.763,5.35,'u',.3,.4,false,-.3);c.frag(6.3,5.4,.76);
     PR.sofa(F(2.2),M.pGreen);
@@ -4474,7 +4334,7 @@ const ROOMS={
     const {g,W,h,F,B,L,R}=c;
     for(let i=0;i<6;i++){PR.rack(g.at(3.5+i*.6,3.2,0),i!==4);PR.rack(g.at(3.5+i*.6,7.0,2),i!==1);}
     PR.cabinet(R(4.6),1.2,2.0,.7,M.pWhite,'vent');
-    PR.desk(L(5.1),{crt:'crt_term',glow:'blue',kb:true});PR.chair(g.at(1.3,5.1,3));
+    PR.desk(L(5.1),{crt:'crt_term',glow:'blue',kb:true});PR.chair(g.at(1.9,5.1,1));
     PR.table(g.at(9.2,4.8,0),.9,.6,M.steel);c.frag(9.2,5.1,.76);
     hideAt(F(11.6));
     g.c(M.pBlue,.035,4,5,.04,5.1,'x',6);g.c(M.pYellow,.03,3,6.2,.035,5.4,'x',6);
@@ -4739,7 +4599,7 @@ function questInteract(){
   }else if(a.type==='sdoor'){
     shadowDoor();
   }else if(a.type==='find'){
-    openFind(a.id);
+    findVisit(a.id);
   }else if(a.type==='note'){
     a.read=true;if(!q.found.includes(a.sector))q.found.push(a.sector);openJournal();
   }else if(a.type==='relay'){
@@ -5537,7 +5397,7 @@ const keys={};
 addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(!e.repeat&&e.code==='KeyH')toggleHide();
-  if(!e.repeat&&e.code==='KeyE')questInteract();
+  if(!e.repeat&&e.code==='KeyE'){questInteract();findLaunch();}
   if(!e.repeat&&e.code==='KeyJ'&&QUEST){if(Game.state==='journal'){Game.state='play';hideScreen();lockPointer();}else openJournal();}
   if(e.code==='KeyF'&&Game.state==='play'){P.lampOn=!P.lampOn;Snd.flick();}
   if(e.code==='Space')e.preventDefault();
@@ -5607,7 +5467,7 @@ function hold(id,on,off){
 hold('brun',()=>{TIN.run=true;},()=>{TIN.run=false;});
 hold('blamp',()=>{if(Game.state==='play'){P.lampOn=!P.lampOn;Snd.flick();}});
 hold('bpause',()=>{Game.pause();});
-hold('binteract',()=>questInteract());
+hold('binteract',()=>questInteract(),()=>findLaunch());
 hold('bjournal',()=>openJournal());
 hold('bcharge',()=>{TIN.charge=true;},()=>{TIN.charge=false;});
 if(TOUCH)document.body.classList.add('touch');
@@ -6223,7 +6083,7 @@ function buildWorld(l){
   unstick(P.pos,P.r+0.05);
   P.pos.y=groundAt(P.pos.x,P.pos.z);
   P.yaw=level.yaw;P.pitch=0;camera.position.set(P.pos.x,P.pos.y+P.eye,P.pos.z);camera.rotation.set(0,P.yaw,0);
-  P.battery=1;P.stam=1;P.lampOn=true;P.alive=true;P.bob=0;
+  P.battery=1;P.stam=1;P.lampOn=true;P.alive=true;P.bob=0;P.grace=0;
   Game.damage=0;Game.dangerLvl=0;
   level.echoSpawns.forEach(sp=>{const v=sp.clone();unstick(v,0.5);makeEcho(v);});
   UI.objt.textContent=level.objective;
@@ -6743,7 +6603,7 @@ function chooseEchoSearch(e){
 function updateEcho(e,dt){
   const pos=e.g.position;
   const d=pos.distanceTo(P.pos);
-  const canSee=!HIDE.active&&!(QUEST&&shadowZone(P.pos.x,P.pos.z))&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8));
+  const canSee=!HIDE.active&&Game.time>(P.grace||0)&&!(QUEST&&shadowZone(P.pos.x,P.pos.z))&&los(pos,P.pos)&&((d<12&&lamp.intensity>.4)||d<2.6||(d<15&&P.noise>.8));
 
   if(canSee){
     if(e.state!=='hunt'){e.state='hunt';e.repath=0;Snd.monsterCall(pos);}
