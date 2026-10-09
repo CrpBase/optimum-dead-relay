@@ -289,6 +289,16 @@
   .gal canvas{position:static;inset:auto;width:100%;height:100%;display:block}
   .gal .lock{display:grid;place-items:center;color:#35553f;font:500 22px var(--mono)}
   .gview{margin-top:22px;display:flex;justify-content:center}
+  .fgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px;margin-top:26px}
+  .fcard{display:flex;flex-direction:column;gap:8px;min-height:168px;padding:16px;border:1px solid #3a2d52;border-radius:2px;background:#0c0a12;color:var(--steel);text-decoration:none;pointer-events:auto}
+  a.fcard{cursor:pointer}a.fcard:hover,a.fcard:focus-visible{border-color:#B87CFF}
+  .fcard .fav{display:flex;margin-bottom:4px}.fcard .fav img{width:54px;height:54px;border-radius:50%;border:2px solid #e9e5dc;object-fit:cover}.fcard .fav img+img{margin-left:-22px}
+  .fcard b{color:#f1f5f2;font-size:16px;font-weight:500;line-height:1.3}
+  .fcard .fh{font:12px var(--mono);letter-spacing:.04em;color:#a99cc0}
+  .fcard .fgo{margin-top:auto;padding-top:6px;font:12px var(--mono);letter-spacing:.08em;color:#B87CFF}
+  .fcard.lock{border-color:#1e1a28;background:#07060a}
+  .fcard.lock .q{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#ffffff0a;color:#5a4a78;font:500 22px var(--mono)}
+  .fcard.lock b{color:#77708a}.fcard.lock .fh{font-family:inherit;font-size:13px;line-height:1.45;letter-spacing:0;color:#5c566c}
   .gview img{max-width:100%;max-height:62vh;object-fit:contain;display:block}
   .lb h3{font-size:15px;font-weight:400;margin:0 0 12px;color:var(--steel)}
   .lb ol{list-style:none;margin:0;padding:0;display:grid;gap:4px}
@@ -3504,7 +3514,8 @@ const FINDS=[
     hint:['Сектор B, ніша в південній стіні перед воротами. Тир із кубиків.','Sector B, an alcove in the south wall before the gate. A shooting range made of blocks.'],
     url:'https://dcityuknow.github.io/from0tohero/',link:['Грати в Block Arena','Play Block Arena']}
 ];
-const FOUND=new Set(),FIND_POS={},FIND={tex:[],told:false,board:null,pending:null};
+// what the courier has found is kept on this device, like the posters, and shown in the menu
+const FOUND=new Set((store.get('deadrelay_finds')||'').split(',').filter(id=>FINDS.some(f=>f.id===id))),FIND_POS={},FIND={tex:[],told:false,board:null,pending:null};
 function findsReset(){
   for(const t of FIND.tex)t.dispose();FIND.tex=[];for(const k of Object.keys(FIND_POS))delete FIND_POS[k];FIND.board=null;
   ARENA.gun=null;ARENA.inside=false;ARENA.targets=[];ARENA.parts=[];ARENA.holes=[];if(ARENA.hand)ARENA.hand.visible=false;
@@ -3513,7 +3524,7 @@ function findTex(w,h,paint){const d=dynTex(w,h);paint(d.x,w,h);d.done();FIND.tex
 function findById(id){return FINDS.find(f=>f.id===id);}
 function findMark(id,extra){
   if(FOUND.has(id))return false;
-  FOUND.add(id);Snd.pickup();
+  FOUND.add(id);store.set('deadrelay_finds',FINDS.filter(f=>FOUND.has(f.id)).map(f=>f.id).join(','));Snd.pickup();
   toast(bi('Знайдено: ','Found: ')+findById(id).who+' · '+FOUND.size+'/'+FINDS.length+(extra?'. '+extra:''));
   return true;
 }
@@ -3802,6 +3813,19 @@ function findCard(f){
   redrawScreen=draw;draw();
 }
 function closeFind(){if(Game.state!=='find')return;redrawScreen=null;Game.state='play';hideScreen();lockPointer();}
+// the menu screen: every hidden project, found ones open with their link, the rest wait behind a question mark
+function findsScreen(){
+  redrawScreen=findsScreen;
+  const got=FOUND.size,n=FINDS.length;
+  screen(`${eyebrow('OPTIMUM · DEAD RELAY')}<h2>${bi('Ігри спільноти','Community games')} · ${got} / ${n}</h2>
+    <div class="body rise">${got?bi('Проєкти авторів спільноти Optimum, які ти знайшов на станції. Решта досі десь там.','Projects by Optimum community makers you found in the station. The rest are still out there.')
+      :bi('Поки нічого. На станції сховано '+n+' проєктів спільноти, підказки є в журналі.','Nothing yet. '+n+' community projects are hidden in the station, and the journal has the hints.')}</div>
+    <div class="fgal rise">${FINDS.map(f=>FOUND.has(f.id)?
+      `<a class="fcard" href="${f.url}" target="_blank" rel="noopener"><span class="fav">${f.av.map(a=>`<img src="${AV_SRC[a]}" alt="">`).join('')}</span><b>${bi(f.title[0],f.title[1])}</b><span class="fh">${f.handle}</span><span class="fgo">${bi(f.link[0],f.link[1])} ↗</span></a>`:
+      `<div class="fcard lock"><span class="fav"><span class="q">?</span></span><b>${bi('Ще не знайдено','Not found yet')}</b><span class="fh">${bi(f.hint[0],f.hint[1])}</span></div>`).join('')}</div>
+    <div class="cta rise"><button class="pill quiet" id="fndBack">${bi('Назад','Back')}</button></div>`,false);
+  document.getElementById('fndBack').onclick=()=>menu();
+}
 // the list in the journal
 function findsJournal(){
   return `<div class="finds"><div class="kicker">${bi('ХОВАНКИ СПІЛЬНОТИ','COMMUNITY HIDE AND SEEK')} · ${FOUND.size}/${FINDS.length}</div>${FINDS.map(f=>FOUND.has(f.id)?
@@ -6243,6 +6267,7 @@ function menu(){
     <div class="chips rise">
       <button class="chip" id="lbt">${bi('ЛІДЕРБОРД','LEADERBOARD')}</button>
       ${ART_SRC.length?`<button class="chip" id="galt">${bi('ГАЛЕРЕЯ','GALLERY')} · ${GALLERY.size}/${ART_SRC.length}</button>`:''}
+      <button class="chip" id="fndt">${bi('ІГРИ','GAMES')} · ${FOUND.size}/${FINDS.length}</button>
       <button class="chip" id="langt">${LANG==='en'?'УКР':'ENG'}</button>
       ${soundControls()}
       ${gfxControl()}
@@ -6251,6 +6276,7 @@ function menu(){
   </div>`,false);
   document.getElementById('lbt').onclick=()=>leaderboardScreen();
   {const g=document.getElementById('galt');if(g)g.onclick=()=>galleryScreen();}
+  document.getElementById('fndt').onclick=()=>findsScreen();
 
   document.getElementById('s1').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();CHECKPOINT=null;Game.start(0);};
   if(TEST_TOOLS)document.getElementById('s2t').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();Game.start(1);};
