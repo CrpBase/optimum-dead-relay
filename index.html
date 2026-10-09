@@ -291,11 +291,12 @@
   .gview{margin-top:22px;display:flex;justify-content:center}
   .fgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:12px;margin-top:26px}
   .fcard{display:flex;flex-direction:column;gap:8px;min-height:168px;padding:16px;border:1px solid #3a2d52;border-radius:2px;background:#0c0a12;color:var(--steel);text-decoration:none;pointer-events:auto}
-  a.fcard{cursor:pointer}a.fcard:hover,a.fcard:focus-visible{border-color:#B87CFF}
   .fcard .fav{display:flex;margin-bottom:4px}.fcard .fav img{width:54px;height:54px;border-radius:50%;border:2px solid #e9e5dc;object-fit:cover}.fcard .fav img+img{margin-left:-22px}
   .fcard b{color:#f1f5f2;font-size:16px;font-weight:500;line-height:1.3}
   .fcard .fh{font:12px var(--mono);letter-spacing:.04em;color:#a99cc0}
-  .fcard .fgo{margin-top:auto;padding-top:6px;font:12px var(--mono);letter-spacing:.08em;color:#B87CFF}
+  .fcard .fd{margin:0;font-size:13px;line-height:1.5;color:#a8a3b8}
+  .fcard .fgo{align-self:flex-start;margin-top:auto;padding:8px 12px;border:1px solid #B87CFF88;border-radius:2px;color:#e2d2ff;text-decoration:none;font:12px var(--mono);letter-spacing:.06em;pointer-events:auto}
+  .fcard .fgo:hover,.fcard .fgo:focus-visible{border-color:#B87CFF;background:#B87CFF1f}
   .fcard.lock{border-color:#1e1a28;background:#07060a}
   .fcard.lock .q{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:#ffffff0a;color:#5a4a78;font:500 22px var(--mono)}
   .fcard.lock b{color:#77708a}.fcard.lock .fh{font-family:inherit;font-size:13px;line-height:1.45;letter-spacing:0;color:#5c566c}
@@ -316,6 +317,11 @@
   .find .fhead img+img{margin-left:-34px}
   .find .fhead h2{margin-top:6px}
   .find a.pill{text-decoration:none;display:inline-flex;align-items:center}
+  #ov.see{background:rgba(4,7,8,.68);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+  .find .unl{display:inline-block;margin-bottom:20px;padding:7px 11px;border:1px solid #ffffff26;border-radius:2px;font:500 12px var(--mono);letter-spacing:.22em;color:#a99cc0}
+  .find .unl.new{border-color:#B87CFF;color:#e2d2ff;background:#B87CFF1f}
+  .find .fdesc{margin:18px 0 0;max-width:54ch;font-size:15px;line-height:1.55;color:var(--steel)}
+  .find .fnote{margin:16px 0 0;font:12px var(--mono);letter-spacing:.04em;color:#8f86a3}
   .finds{margin-top:26px}.frow{display:flex;gap:12px;align-items:center;padding:9px 0;font-size:14px;line-height:1.4;color:var(--steel)}
   .frow img,.frow .q{width:40px;height:40px;border-radius:50%;flex-shrink:0;object-fit:cover}.frow img+img{margin-left:-24px}
   .frow .q{display:grid;place-items:center;background:#ffffff14;font-family:var(--mono);color:#B87CFF}
@@ -3500,19 +3506,24 @@ async function loadAvatars(){
 const FINDS=[
   {id:'cipher',who:'Cipher',handle:'@nnthanhthanh96',av:['cipher'],sector:0,title:['Тінь з картону','Cardboard shadow'],
     hint:['Сектор A, південна стіна біля вузла даних. Двері з картонкою «ТІНІ».','Sector A, the south wall by the data node. A door with a cardboard SHADOWS sign.'],
-    url:'https://x.com/nnthanhthanh96',link:['Cipher в X','Cipher on X']},
+    url:'https://x.com/nnthanhthanh96',link:['Cipher в X','Cipher on X'],
+    desc:['Скульптура з вирізаного картону. Її тінь складається в картинку лише з однієї точки.','A sculpture of cut cardboard. Its shadow turns into a picture from one spot only.']},
   {id:'tour',who:'Bobyhamster · Tynar',handle:'@bobyhamster · @0xTynar',av:['boby','tynar'],sector:0,title:['Optimum World Tour','Optimum World Tour'],
     hint:['Сектор A, Багажна (A03). Валіза з наліпками на стійці.','Sector A, Lost property (A03). A suitcase covered in stickers on the counter.'],
-    url:'https://optimum-world-tour.vercel.app',link:['Грати в World Tour','Play World Tour']},
+    url:'https://optimum-world-tour.vercel.app',link:['Грати в World Tour','Play World Tour'],
+    desc:['Браузерна гра: світове турне Optimum, зупинка за зупинкою.','A browser game: Optimum\'s world tour, stop by stop.']},
   {id:'vita',who:'Vita Zhuk',handle:'@zhukv197',av:['vita'],sector:1,title:['NODEOS: симулятор вузла','NODEOS: the node simulator'],
     hint:['Сектор B, Диспетчерська (B06). Один монітор тут досі світиться.','Sector B, Control room (B06). One monitor in there is still lit.'],
-    url:'https://runnernodes.vercel.app',link:['Відкрити симулятор','Open the simulator']},
+    url:'https://runnernodes.vercel.app',link:['Відкрити симулятор','Open the simulator'],
+    desc:['Симулятор вузла: спробуй себе оператором ноди в мережі.','A node simulator: try running a node on the network yourself.']},
   {id:'hawk',who:'Hawk',handle:'@hawk_tyt',av:['hawk'],sector:2,title:['Content Oracle','Content Oracle'],
     hint:['Сектор C, Архів депо (C04). Дошка з картками сорочкою догори.','Sector C, Depot archive (C04). A board of cards pinned face down.'],
-    url:'https://optimum-content-oracle.netlify.app',link:['Відкрити колоду на 100 карток','Open the deck of 100']},
+    url:'https://optimum-content-oracle.netlify.app',link:['Відкрити колоду на 100 карток','Open the deck of 100'],
+    desc:['Колода зі 100 карток. Тягнеш одну й отримуєш ідею для контенту.','A deck of 100 cards. Draw one and get an idea for your next post.']},
   {id:'arena',who:'Keng SiRô',handle:'@dcityuknow',av:['keng'],sector:1,title:['Block Arena','Block Arena'],
     hint:['Сектор B, ніша в південній стіні перед воротами. Тир із кубиків.','Sector B, an alcove in the south wall before the gate. A shooting range made of blocks.'],
-    url:'https://dcityuknow.github.io/from0tohero/',link:['Грати в Block Arena','Play Block Arena']}
+    url:'https://dcityuknow.github.io/from0tohero/',link:['Грати в Block Arena','Play Block Arena'],
+    desc:['Кубічна гра-арена просто в браузері: від нуля до героя.','A blocky arena game right in the browser: from zero to hero.']}
 ];
 // what the courier has found is kept on this device, like the posters, and shown in the menu
 const FOUND=new Set((store.get('deadrelay_finds')||'').split(',').filter(id=>FINDS.some(f=>f.id===id))),FIND_POS={},FIND={tex:[],told:false,board:null,pending:null};
@@ -3522,10 +3533,11 @@ function findsReset(){
 }
 function findTex(w,h,paint){const d=dynTex(w,h);paint(d.x,w,h);d.done();FIND.tex.push(d.t);return d;}
 function findById(id){return FINDS.find(f=>f.id===id);}
-function findMark(id,extra){
+function findMark(id,extra,quiet){
   if(FOUND.has(id))return false;
   FOUND.add(id);store.set('deadrelay_finds',FINDS.filter(f=>FOUND.has(f.id)).map(f=>f.id).join(','));Snd.pickup();
-  toast(bi('Знайдено: ','Found: ')+findById(id).who+' · '+FOUND.size+'/'+FINDS.length+(extra?'. '+extra:''));
+  const f=findById(id);
+  if(!quiet)toast(bi('Розблоковано ','Unlocked ')+FOUND.size+'/'+FINDS.length+' · '+bi(f.title[0],f.title[1])+(extra?'. '+extra:''));
   return true;
 }
 function findItem(id,aim,label){
@@ -3792,23 +3804,29 @@ function echoesBackOff(){
   }
   P.grace=Game.time+6;Snd.silenceMonster();
 }
+// E at a piece opens its card: who made it, a line about it, and the link. Nothing leaves the game until the player taps the link.
 function findVisit(id){
   const f=findById(id);if(!f||Game.state!=='play')return;
-  findMark(id);echoesBackOff();
-  Game.pause();          // the delivery clock waits while the player is away
-  FIND.pending=f;        // opened by the key press or, on a phone, when the finger lifts: browsers only allow it then
+  const fresh=findMark(id,null,true);echoesBackOff();
+  findCard(f,fresh);     // the delivery clock waits while the card is open
 }
 function findLaunch(){
   const f=FIND.pending;if(!f)return;FIND.pending=null;
   let w=null;try{w=window.open(f.url,'_blank');if(w)w.opener=null;}catch(e){}
   if(!w)findCard(f);     // the browser refused a new tab: offer the link to tap
 }
-function findCard(f){
+function findCard(f,fresh){
   Game.state='find';unlockPointer();
   const draw=()=>{
-    screen(`<section class="find"><div class="fhead">${f.av.map(a=>`<img src="${AV_SRC[a]}" alt="">`).join('')}<div><div class="kicker">${bi('ХОВАНКА','HIDDEN')} ${FOUND.size}/${FINDS.length} · ${f.handle}</div><h2>${bi(f.title[0],f.title[1])}</h2></div></div>
-      <div class="cta"><a class="pill primary" href="${f.url}" target="_blank" rel="noopener">${bi(f.link[0],f.link[1])} ↗</a><button class="pill quiet" id="closeFind">${bi('Повернутись','Return')}</button></div></section>`,true);
+    const tally=FOUND.size+' / '+FINDS.length;
+    screen(`<section class="find"><div class="unl${fresh?' new':''}">${fresh?bi('РОЗБЛОКОВАНО','UNLOCKED'):bi('ІГРИ СПІЛЬНОТИ','COMMUNITY GAMES')} · ${tally}</div>
+      <div class="fhead">${f.av.map(a=>`<img src="${AV_SRC[a]}" alt="">`).join('')}<div><div class="kicker">${f.handle}</div><h2>${bi(f.title[0],f.title[1])}</h2></div></div>
+      <p class="fdesc">${bi(f.desc[0],f.desc[1])}</p>
+      <div class="cta"><a class="pill primary" href="${f.url}" target="_blank" rel="noopener">${bi(f.link[0],f.link[1])} ↗</a><button class="pill quiet" id="closeFind">${bi('Повернутись','Return')}</button></div>
+      ${fresh?`<p class="fnote">${bi('Усе знайдене чекає в меню, розділ ІГРИ.','Everything you find waits in the menu under GAMES.')}</p>`:''}</section>`,true);
     document.getElementById('closeFind').onclick=closeFind;
+    UI.ov.classList.add('see');   // the piece stays in view behind the card
+    document.getElementById('interact').classList.remove('visible');
   };
   redrawScreen=draw;draw();
 }
@@ -3821,7 +3839,7 @@ function findsScreen(){
     <div class="body rise">${got?bi('Проєкти авторів спільноти Optimum, які ти знайшов на станції. Решта досі десь там.','Projects by Optimum community makers you found in the station. The rest are still out there.')
       :bi('Поки нічого. На станції сховано '+n+' проєктів спільноти, підказки є в журналі.','Nothing yet. '+n+' community projects are hidden in the station, and the journal has the hints.')}</div>
     <div class="fgal rise">${FINDS.map(f=>FOUND.has(f.id)?
-      `<a class="fcard" href="${f.url}" target="_blank" rel="noopener"><span class="fav">${f.av.map(a=>`<img src="${AV_SRC[a]}" alt="">`).join('')}</span><b>${bi(f.title[0],f.title[1])}</b><span class="fh">${f.handle}</span><span class="fgo">${bi(f.link[0],f.link[1])} ↗</span></a>`:
+      `<div class="fcard"><span class="fav">${f.av.map(a=>`<img src="${AV_SRC[a]}" alt="">`).join('')}</span><b>${bi(f.title[0],f.title[1])}</b><span class="fh">${f.handle}</span><p class="fd">${bi(f.desc[0],f.desc[1])}</p><a class="fgo" href="${f.url}" target="_blank" rel="noopener">${bi(f.link[0],f.link[1])} ↗</a></div>`:
       `<div class="fcard lock"><span class="fav"><span class="q">?</span></span><b>${bi('Ще не знайдено','Not found yet')}</b><span class="fh">${bi(f.hint[0],f.hint[1])}</span></div>`).join('')}</div>
     <div class="cta rise"><button class="pill quiet" id="fndBack">${bi('Назад','Back')}</button></div>`,false);
   document.getElementById('fndBack').onclick=()=>menu();
@@ -5622,7 +5640,7 @@ const keys={};
 addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(!e.repeat&&e.code==='KeyH')toggleHide();
-  if(!e.repeat&&e.code==='KeyE'){questInteract();findLaunch();}
+  if(!e.repeat&&e.code==='KeyE'){if(Game.state==='find'){closeFind();return;}questInteract();findLaunch();}
   if(!e.repeat&&e.code==='KeyJ'&&QUEST){if(Game.state==='journal'){Game.state='play';hideScreen();lockPointer();}else openJournal();}
   if(e.code==='KeyF'&&Game.state==='play'){P.lampOn=!P.lampOn;Snd.flick();}
   if(e.code==='Space')e.preventDefault();
@@ -5822,7 +5840,7 @@ function screen(html,hud){
   document.getElementById('teamRead').style.display='none';
   Snd.silenceMonster();document.getElementById('hideAction').style.display='none';document.getElementById('hideSlats').style.display='none';
   UI.card.innerHTML=html;
-  UI.ov.classList.remove('hide');
+  UI.ov.classList.remove('hide','see');
   UI.hud.classList.toggle('on',!!hud);
   document.getElementById('touch').classList.remove('on');
   TIN.x=0;TIN.y=0;TIN.run=false;TIN.charge=false;Object.keys(keys).forEach(k=>keys[k]=false);moveId=null;lookId=null;
