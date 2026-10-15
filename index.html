@@ -345,6 +345,8 @@
   #sectorCard .sl{font:12px var(--mono);letter-spacing:.4em;color:#9fb4a8}
   #sectorCard .sn{font:clamp(32px,6vw,60px) var(--mono);letter-spacing:.04em;margin-top:10px;color:#f1f5f2;text-shadow:0 2px 30px #000}
   #sectorCard .ss{font:16px var(--mono);color:#c9d6cf;margin-top:14px;line-height:1.5;text-shadow:0 1px 12px #000}
+  #sectorCard .sf{font:14px var(--mono);letter-spacing:.06em;color:#C9A3FF;margin-top:10px;text-shadow:0 1px 12px #000}#sectorCard .sf:empty{display:none}
+  #obj .fs{margin-top:8px;font:11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#C9A3FF}#obj .fs:empty{display:none}
   #interact{border-radius:4px;border-color:#b4ffbd66;color:#e9fff0;letter-spacing:.04em}
   @media(max-width:700px){#itemCard{bottom:150px}#sectorCard .ss{font-size:14px}}
 </style>
@@ -355,7 +357,7 @@
 
 <div id="hud">
   <div id="scrimTop"></div><div id="scrimBot"></div>
-  <div id="obj"><div class="lbl" id="lblObj">Objective</div><div class="t" id="objt"></div></div>
+  <div id="obj"><div class="lbl" id="lblObj">Objective</div><div class="t" id="objt"></div><div class="fs" id="objf"></div></div>
   <div id="clock"><div class="lbl" id="lblWin">Uplink window</div><div class="t" id="clockt">00:00</div></div>
   <div id="batwrap"><div class="lbl" id="lblBat">Lamp cell</div><div id="batbar"><div id="batfill"></div></div></div>
   <div id="stam"><div id="stamfill"></div></div>
@@ -368,7 +370,7 @@
   <div id="cap"><div class="who lbl"></div><div class="line"></div></div>
   <div id="danger"></div><div id="location"></div><div id="interact"></div><div id="lampStatus"></div>
   <div id="itemCard"><div class="ic"></div><div><div class="it"></div><div class="is"></div></div></div>
-  <div id="sectorCard"><div class="sl"></div><div class="sn"></div><div class="ss"></div></div>
+  <div id="sectorCard"><div class="sl"></div><div class="sn"></div><div class="ss"></div><div class="sf"></div></div>
 </div>
 
 <div id="touch">
@@ -3526,9 +3528,9 @@ const FINDS=[
     desc:['Кубічна гра-арена просто в браузері: від нуля до героя.','A blocky arena game right in the browser: from zero to hero.']}
 ];
 // what the courier has found is kept on this device, like the posters, and shown in the menu
-const FOUND=new Set((store.get('deadrelay_finds')||'').split(',').filter(id=>FINDS.some(f=>f.id===id))),FIND_POS={},FIND={tex:[],told:false,board:null,pending:null};
+const FOUND=new Set((store.get('deadrelay_finds')||'').split(',').filter(id=>FINDS.some(f=>f.id===id))),FIND_POS={},FIND={tex:[],told:false,board:null,pending:null,glows:{}};
 function findsReset(){
-  for(const t of FIND.tex)t.dispose();FIND.tex=[];for(const k of Object.keys(FIND_POS))delete FIND_POS[k];FIND.board=null;
+  for(const t of FIND.tex)t.dispose();FIND.tex=[];for(const k of Object.keys(FIND_POS))delete FIND_POS[k];FIND.board=null;FIND.glows={};
   ARENA.gun=null;ARENA.inside=false;ARENA.targets=[];ARENA.parts=[];ARENA.holes=[];if(ARENA.hand)ARENA.hand.visible=false;
 }
 function findTex(w,h,paint){const d=dynTex(w,h);paint(d.x,w,h);d.done();FIND.tex.push(d.t);return d;}
@@ -3544,9 +3546,52 @@ function findItem(id,aim,label){
   FIND_POS[id]=aim.clone();
   QUEST.items.push({type:'find',id,sector:findById(id).sector,aim,marker:makeMarker(aim,0xB87CFF),label:()=>bi(label[0],label[1])});
 }
+// a soft violet glow over each piece not found yet: in the dark it reads from across a hall, never through a wall
+let FIND_GLOW_T=null,FIND_BEAM_T=null;
+const FIND_GLOW_AT={cipher:[57,1.3,3.7]};   // the shadow room is behind its door: the door glows
+const w2=id=>Math.sin(Game.time*2.4+id.length);
+function findGlowTick(){
+  if(!FIND_GLOW_T){
+    const c=cvs(128,128),x=c.getContext('2d'),g=x.createRadialGradient(64,64,0,64,64,64);
+    g.addColorStop(0,'rgba(255,255,255,.95)');g.addColorStop(.22,'rgba(255,255,255,.5)');g.addColorStop(.55,'rgba(255,255,255,.14)');g.addColorStop(1,'rgba(255,255,255,0)');
+    x.fillStyle=g;x.fillRect(0,0,128,128);FIND_GLOW_T=tex(c,1,1);
+  }
+  for(const f of FINDS){
+    const p=FIND_POS[f.id];if(!p)continue;
+    let gl=FIND.glows[f.id];
+    if(!gl){
+      gl=FIND.glows[f.id]=new THREE.Sprite(new THREE.SpriteMaterial({map:FIND_GLOW_T,color:0x9A5CFF,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,fog:false,toneMapped:false}));
+      const at=FIND_GLOW_AT[f.id];if(at)gl.position.set(at[0],at[1],at[2]);else gl.position.set(p.x,Math.max(p.y,.8),p.z);
+      gl.renderOrder=994;gl.visible=false;world.add(gl);
+      // a small bright heart inside the haze, so it reads as a point of light from far away
+      const core=new THREE.Sprite(new THREE.SpriteMaterial({map:FIND_GLOW_T,color:0xB07CFF,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,fog:false,toneMapped:false}));
+      core.position.copy(gl.position);core.scale.set(.42,.42,1);core.renderOrder=995;core.visible=false;world.add(core);gl.userData.core=core;
+      // and a pale violet column from the floor, which the walls hide by themselves and which carries down a long hall
+      if(!FIND_BEAM_T){
+        const c=cvs(64,256),x=c.getContext('2d');
+        for(let j=0;j<256;j++){const v=j/255,a=Math.pow(1-v,.75)*Math.min(1,v/.05);
+          const g=x.createLinearGradient(0,0,64,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,'+a.toFixed(3)+')');g.addColorStop(1,'rgba(255,255,255,0)');
+          x.fillStyle=g;x.fillRect(0,255-j,64,1);}
+        FIND_BEAM_T=tex(c,1,1);
+      }
+      const beam=new THREE.Mesh(new THREE.PlaneGeometry(.9,3.0),new THREE.MeshBasicMaterial({map:FIND_BEAM_T,color:0x8F4DFF,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false,toneMapped:false}));
+      beam.position.set(gl.position.x,(groundFn?groundFn(gl.position.x,gl.position.z):0)+1.5,gl.position.z);beam.renderOrder=993;beam.visible=false;world.add(beam);gl.userData.beam=beam;
+    }
+    const d=gl.position.distanceTo(camera.position);
+    let a=0;
+    if(!FOUND.has(f.id)&&!HIDE.active&&d<28&&d>1.4&&sight(camera.position,gl.position))a=Math.min(1,(28-d)/5)*Math.min(1,(d-1.4)/2.6);
+    gl.visible=a>.01;
+    if(gl.visible){const w=Math.sin(Game.time*2.4);gl.material.opacity=a*(.55+.12*w);const sc=1.5+.15*w;gl.scale.set(sc,sc,1);}
+    const core=gl.userData.core;core.visible=gl.visible;if(core.visible)core.material.opacity=a*(.55+.15*w2(f.id));
+    const bm=gl.userData.beam,bd=bm.position.distanceTo(camera.position);
+    const ba=FOUND.has(f.id)||HIDE.active?0:Math.min(1,(40-bd)/8)*Math.min(1,Math.max(0,(bd-2.2)/3));
+    bm.visible=ba>.01;
+    if(bm.visible){bm.rotation.y=Math.atan2(camera.position.x-bm.position.x,camera.position.z-bm.position.z);bm.material.opacity=ba*(.9+.1*w2(f.id));bm.scale.set(1,1,1);}
+  }
+}
 // the nearest unfound piece, if it is close enough to feel
 function findNear(){
-  let best=null,bd=17;
+  let best=null,bd=30;
   for(const f of FINDS){
     if(FOUND.has(f.id))continue;const p=FIND_POS[f.id];if(!p)continue;
     const d=Math.hypot(p.x-P.pos.x,p.z-P.pos.z);if(d<bd){bd=d;best={f,p,d};}
@@ -4806,6 +4851,8 @@ function sectorCard(s){
   el.querySelector('.ss').textContent=[bi('Сім фрагментів лежать у кімнатах уздовж залу.','Seven fragments lie in the rooms along the hall.'),
     bi('Сім фрагментів у майстернях і щитових.','Seven fragments in the workshops and plant rooms.'),
     bi('Останні сім фрагментів, далі вихід.','The last seven fragments, then the exit.')][s];
+  const hid=FINDS.filter(f=>f.sector===s&&!FOUND.has(f.id)).length;
+  el.querySelector('.sf').textContent=hid?bi('Тут сховано ігор спільноти: ','Community games hidden here: ')+hid:'';
   el.classList.add('on');sectorT=5;
 }
 /* ---- actions ---- */
@@ -4889,6 +4936,7 @@ function updateQuest(dt,wants){
   _fc.setHex(FOGS[s][0]);scene.fog.color.lerp(_fc,Math.min(1,dt*1.5));scene.background.copy(scene.fog.color);
   scene.fog.density+=(FOGS[s][1]-scene.fog.density)*Math.min(1,dt*1.5);
   const text=objectiveText();if(UI.objt.textContent!==text)UI.objt.textContent=text;
+  const ftx=bi('Ігри спільноти','Community games')+' · '+FOUND.size+'/'+FINDS.length;const fe=document.getElementById('objf');if(fe&&fe.textContent!==ftx)fe.textContent=ftx;
   /* what the courier is looking at */
   q.current=null;let nd=2.3;
   const consider=(a,target,src)=>{
@@ -4944,6 +4992,7 @@ function updateQuest(dt,wants){
       cd.textContent=bi('ХОВАНКА ПОРУЧ · ','SOMETHING HIDDEN · ')+Math.round(nf.d)+bi(' м',' m');cd.style.color='#B87CFF';
     }else{mark.style.opacity='0';mark.classList.remove('find');cd.style.color='';cd.textContent=TOUCH?'':bi('J · ЖУРНАЛ / R · ЗАРЯД','J · JOURNAL / R · CHARGE');}
   }
+  findGlowTick();
   if(!FIND.told&&Game.runTime>7&&FOUND.size<FINDS.length){FIND.told=true;toast(bi('На станції сховались автори спільноти Optimum. Підказки чекають у журналі.','Makers from the Optimum community are hidden in the station. The journal has the hints.'));}
   for(const h of HIDE.spots)h.beacon.material.opacity=hunted?.35+.25*Math.sin(Game.time*5):0;
   /* ambience */
@@ -6114,7 +6163,7 @@ function mountResultCard(lvl){
  const save=document.createElement('button');save.className='pill primary';save.textContent=bi('Скачати картку PNG','Download PNG card');
  save.onclick=()=>{card.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='optimum-dead-relay-result.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);},'image/png');};actions.appendChild(save);
  const share=document.createElement('button');share.className='pill quiet';share.textContent=bi('Поділитися в X','Share on X');
- share.onclick=()=>{const r=resultDetails(lvl);if(!r.complete)return;const name=resultNick.trim()||'I';const text=name+' completed both worlds of Optimum: Dead Relay in '+fmt(r.seconds)+'.\n\nWithout Optimum: '+fmt(RUN.metro)+'\nWith Optimum: '+fmt(RUN.field)+'\n\nSpeed is money. @get_optimum';window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(gameURL()),'_blank','noopener,noreferrer');};actions.appendChild(share);wrap.appendChild(actions);
+ share.onclick=()=>{const r=resultDetails(lvl);if(!r.complete)return;const text='I just finished Optimum: Dead Relay in '+fmt(r.seconds)+'.\n\nTry to beat my time: '+gameURL()+'\n\nSpeed is money. @get_optimum';window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text),'_blank','noopener,noreferrer');};actions.appendChild(share);wrap.appendChild(actions);
  const note=document.createElement('p');note.className='note';note.textContent=bi('Спочатку скачай картку, потім прикріпи її до допису в X.','Download your card, then attach it to your post on X.');wrap.appendChild(note);UI.card.appendChild(wrap);
 }
 
@@ -6335,7 +6384,7 @@ function buildWorld(l){
   P.battery=1;P.stam=1;P.lampOn=true;P.alive=true;P.bob=0;P.grace=0;
   Game.damage=0;Game.dangerLvl=0;
   level.echoSpawns.forEach(sp=>{const v=sp.clone();unstick(v,0.5);makeEcho(v);});
-  UI.objt.textContent=level.objective;
+  UI.objt.textContent=level.objective;document.getElementById('objf').textContent='';
   seen=level.map?new Uint8Array(level.map.W*level.map.H):null;
   miniEl.style.display='none';
   pips(level.total,level.coded);updatePips();
@@ -7036,6 +7085,15 @@ applyLang();
 let skipIntro=null;try{skipIntro=sessionStorage.getItem('deadrelay_skip');sessionStorage.removeItem('deadrelay_skip');}catch(e){}
 if(skipIntro){if(skipIntro!=='-')resultNick=skipIntro;document.getElementById('intro').classList.add('hide');menu();}else coldOpen(menu);
 addEventListener('keydown',e=>{if(e.code==='KeyM'&&!e.repeat&&!(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)))toggleMute();});
+// Phones stop the sound when the browser goes to the background (another app, a call, a screenshot) and keep it
+// stopped until the page asks again from inside a touch. Every touch and key asks.
+function soundWake(){
+  const c=Snd.ctx;if(!c||c.state==='running'||c.state==='closed')return;
+  const p=c.resume();if(p&&p.catch)p.catch(()=>{});
+  try{const b=c.createBufferSource();b.buffer=c.createBuffer(1,1,22050);b.connect(c.destination);b.start(0);}catch(e){}
+}
+['pointerdown','touchend','keydown'].forEach(t=>addEventListener(t,soundWake,{capture:true,passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)soundWake();});
 addEventListener('keydown',e=>{if(e.code==='Escape'){if(Game.state==='biography')closeTeamBio();else if(Game.state==='find')closeFind();else if(Game.state==='play')Game.pause();}});
 requestAnimationFrame(tick);
 // Statues are only needed in the Optimum world: fetch them while the first world is being played.
