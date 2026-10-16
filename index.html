@@ -321,6 +321,7 @@
   .find .fhead h2{margin-top:6px}
   .find a.pill{text-decoration:none;display:inline-flex;align-items:center}
   #ov.see{background:rgba(4,7,8,.68);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+  .menu-done{margin-top:16px;color:#bcedb9;letter-spacing:.18em}
   .find .unl{display:inline-block;margin-bottom:20px;padding:7px 11px;border:1px solid #ffffff26;border-radius:2px;font:500 12px var(--mono);letter-spacing:.22em;color:#a99cc0}
   .find .unl.new{border-color:#B87CFF;color:#e2d2ff;background:#B87CFF1f}
   .find .fdesc{margin:18px 0 0;max-width:54ch;font-size:15px;line-height:1.55;color:var(--steel)}
@@ -5863,7 +5864,7 @@ function coldOpen(after){
    event.preventDefault();if(state!=='name')return;
    const name=Array.from(input.value.replace(/[\u0000-\u001f\u007f<>]/g,'').trim()).slice(0,24).join('');
    if(!name){input.value='';input.focus();return;}
-   resultNick=name;sound();state='brief';form.hidden=true;button.hidden=false;
+   resultNick=name;store.set('deadrelay_nick',name);sound();state='brief';form.hidden=true;button.hidden=false;
    const reply=document.createElement('p');reply.className='l crt-reply';reply.textContent='> '+name;log.appendChild(reply);
    const mission=document.createElement('p');mission.className='l';log.appendChild(mission);log.scrollTop=log.scrollHeight;
    const message=bi('Добре, '+name+'. Потрібно доставити дані в блокчейні.\n\nСпочатку ти пройдеш мережею без Optimum. Будь обережний.\n\nТвоя задача: знайти відсутні частини й доставити повний блок.\n\nЯк виберешся, на тебе чекає швидкий і приємний світ. Там доставку прискорює Optimum.',
@@ -6032,6 +6033,7 @@ const Game={
   clear(){
     if(this.state!=='play'||!exitOpened||SHARDS.filter(s=>s.got).length<level.need||(level.exitReady&&!level.exitReady()))return;
     if(this.lvl===0)RUN.metro=this.runTime;else RUN.field=this.runTime;
+    if(this.lvl===1&&Number.isFinite(RUN.metro)&&Number.isFinite(RUN.field))saveFullRun(RUN.metro,RUN.field);
     this.state='clear';unlockPointer();Snd.door();
     const t=fmt(this.runTime),d=ECHOES.length,l=this.lvl;
     redrawScreen=()=>clearScreen(l,t,d);
@@ -6039,6 +6041,12 @@ const Game={
   }
 };
 
+// what one device remembers about finishing both worlds
+function fullRun(){try{const v=JSON.parse(store.get('deadrelay_done')||'null');return v&&Number.isFinite(v.total)?v:null;}catch(e){return null;}}
+function saveFullRun(metro,field){
+  const prev=fullRun(),total=metro+field;
+  if(!prev||total<prev.total)store.set('deadrelay_done',JSON.stringify({total,metro,field}));
+}
 function soundControls(){
   return `<button class="chip" id="sndt" aria-pressed="${Snd.muted}">${soundLabel()}</button>`+
     `<label class="vol">${bi('МУЗИКА','MUSIC')}<input id="musvol" type="range" min="0" max="100" step="5" value="${Math.round(Snd.musicVol*100)}" aria-label="${bi('Гучність музики','Music volume')}"></label>`;
@@ -6135,7 +6143,7 @@ function versusBlock(){
     `<div class="fast"><div class="lbl">${bi('З Optimum','With Optimum')}</div><div class="n">${fmt(RUN.field)}</div></div></div>${line}`;
 }
 
-let resultNick='';
+let resultNick=(store.get('deadrelay_nick')||'').slice(0,24);   // kept on this device, offered again in the terminal
 function resultDetails(lvl){
  const complete=lvl===1&&Number.isFinite(RUN.metro)&&RUN.metro>=0&&Number.isFinite(RUN.field)&&RUN.field>=0;
  return {complete,label:'FULL GAME COMPLETED',seconds:complete?RUN.metro+RUN.field:null};
@@ -6344,13 +6352,14 @@ function menu(){
 
     <div class="cta rise">
       <button class="pill primary" id="s1">${T('mStart')}</button>
-      ${TEST_TOOLS?`<button class="pill quiet" id="s2t">${bi('ТЕСТ · Світ Optimum','TEST · Optimum world')}</button>`:''}
+      ${TEST_TOOLS?`<button class="pill quiet" id="s2t">${bi('ТЕСТ · Світ Optimum','TEST · Optimum world')}</button>`:fullRun()?`<button class="pill quiet" id="s2w">${bi('Світ Optimum →','Optimum world →')}</button>`:''}
     </div>
+    ${fullRun()?`<div class="kicker rise menu-done">${bi('ГРУ ПРОЙДЕНО','GAME COMPLETE')} · ${bi('РЕКОРД','BEST')} ${fmt(fullRun().total)}${resultNick?' · '+resultNick.replace(/[<>&]/g,''):''}</div>`:''}
     <div class="chips rise">
       <button class="chip" id="lbt">${bi('ЛІДЕРБОРД','LEADERBOARD')}</button>
       ${ART_SRC.length?`<button class="chip" id="galt">${bi('ГАЛЕРЕЯ','GALLERY')} · ${GALLERY.size}/${ART_SRC.length}</button>`:''}
       <button class="chip" id="fndt">${bi('ІГРИ','GAMES')} · ${FOUND.size}/${FINDS.length}</button>
-      ${GALLERY.size||FOUND.size?`<button class="chip" id="rstt">${bi('СКИНУТИ ПРОГРЕС','RESET PROGRESS')}</button>`:''}
+      ${GALLERY.size||FOUND.size||fullRun()?`<button class="chip" id="rstt">${bi('СКИНУТИ ПРОГРЕС','RESET PROGRESS')}</button>`:''}
       <button class="chip" id="langt">${LANG==='en'?'УКР':'ENG'}</button>
       ${soundControls()}
       ${gfxControl()}
@@ -6364,6 +6373,8 @@ function menu(){
 
   document.getElementById('s1').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();CHECKPOINT=null;Game.start(0);};
   if(TEST_TOOLS)document.getElementById('s2t').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();Game.start(1);};
+  // straight into the Optimum world: a time from an earlier station run must not count with it on the leaderboard
+  {const w=document.getElementById('s2w');if(w)w.onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();RUN.metro=null;Game.start(1);};}
 }
 
 /* ---------------- world build / teardown ---------------- */
@@ -7111,12 +7122,12 @@ addEventListener('resize',()=>placeLocation());
 function resetScreen(){
   redrawScreen=resetScreen;
   screen(`${eyebrow('OPTIMUM · DEAD RELAY')}<h2>${bi('Скинути прогрес?','Reset progress?')}</h2>
-    <div class="body rise">${bi('Знайдені ігри спільноти ('+FOUND.size+'/'+FINDS.length+') і постери в галереї ('+GALLERY.size+'/'+ART_SRC.length+') зникнуть з цього пристрою, і все можна буде шукати знову. Лідерборд залишиться як є.',
-      'Found community games ('+FOUND.size+'/'+FINDS.length+') and the posters in your gallery ('+GALLERY.size+'/'+ART_SRC.length+') will be cleared on this device, so you can hunt for them again. The leaderboard stays as it is.')}</div>
+    <div class="body rise">${bi('Знайдені ігри спільноти ('+FOUND.size+'/'+FINDS.length+'), постери в галереї ('+GALLERY.size+'/'+ART_SRC.length+')'+(fullRun()?' і пройдена гра з рекордом '+fmt(fullRun().total):'')+' зникнуть з цього пристрою, і все можна буде пройти знову. Нік і лідерборд залишаться як є.',
+      'Found community games ('+FOUND.size+'/'+FINDS.length+'), the posters in your gallery ('+GALLERY.size+'/'+ART_SRC.length+')'+(fullRun()?' and your finished game with its best time of '+fmt(fullRun().total):'')+' will be cleared on this device, so you can play through it all again. Your nickname and the leaderboard stay as they are.')}</div>
     <div class="cta rise"><button class="pill primary" id="rstYes">${bi('Скинути','Reset')}</button><button class="pill quiet" id="rstNo">${bi('Назад','Back')}</button></div>`,false);
   document.getElementById('rstNo').onclick=()=>menu();
   document.getElementById('rstYes').onclick=()=>{
-    FOUND.clear();GALLERY.clear();store.set('deadrelay_finds','');store.set('deadrelay_gallery','');
+    FOUND.clear();GALLERY.clear();store.set('deadrelay_finds','');store.set('deadrelay_gallery','');store.set('deadrelay_done','');
     menu();
   };
 }
