@@ -2361,7 +2361,7 @@ function buildAtlas(){
     rrect(x,26,26,w-52,250,16);x.fillStyle='#0c3a28';x.fill();
     crouch(x,w/2,160,210,'#eafff4');
     fitText(x,UA?'УКРИТТЯ':'SHELTER',w/2,342,700,58,w-44,'#062216');
-    fitText(x,'E / H',w/2,382,500,28,w-44,'#062216',true);
+    fitText(x,'E',w/2,382,500,28,w-44,'#062216',true);
   });
   lit.add('hide_floor',384,384,(x,w,h)=>{
     x.strokeStyle='#39d892';x.lineWidth=20;rrect(x,22,22,w-44,h-44,26);x.stroke();
@@ -4796,6 +4796,10 @@ function lookingAt(pos,range){
   _lv.multiplyScalar(1/Math.max(n,1e-4));_lf.set(0,0,-1).applyQuaternion(camera.quaternion);
   return _lv.dot(_lf)>.78&&sight(camera.position,pos);
 }
+function facing(pos,range,dot){
+  _lv.subVectors(pos,camera.position);const n=_lv.length();if(n>range)return false;
+  _lv.multiplyScalar(1/Math.max(n,1e-4));_lf.set(0,0,-1).applyQuaternion(camera.quaternion);return _lv.dot(_lf)>dot;
+}
 function inBeam(pos,range=9){
   if(!P.lampOn||lamp.intensity<.1)return false;
   const d=new THREE.Vector3().subVectors(pos,camera.position),n=d.length();
@@ -4935,8 +4939,9 @@ function updateQuest(dt,wants){
   setGrade('ABC'[s]);
   _fc.setHex(FOGS[s][0]);scene.fog.color.lerp(_fc,Math.min(1,dt*1.5));scene.background.copy(scene.fog.color);
   scene.fog.density+=(FOGS[s][1]-scene.fog.density)*Math.min(1,dt*1.5);
-  const text=objectiveText();if(UI.objt.textContent!==text)UI.objt.textContent=text;
-  const ftx=bi('Ігри спільноти','Community games')+' · '+FOUND.size+'/'+FINDS.length;const fe=document.getElementById('objf');if(fe&&fe.textContent!==ftx)fe.textContent=ftx;
+  const text=objectiveText();let moved=false;if(UI.objt.textContent!==text){UI.objt.textContent=text;moved=true;}
+  const ftx=bi('Ігри спільноти','Community games')+' · '+FOUND.size+'/'+FINDS.length;const fe=document.getElementById('objf');if(fe&&fe.textContent!==ftx){fe.textContent=ftx;moved=true;}
+  if(moved)placeLocation();
   /* what the courier is looking at */
   q.current=null;let nd=2.3;
   const consider=(a,target,src)=>{
@@ -4955,6 +4960,11 @@ function updateQuest(dt,wants){
   for(const sh of SHARDS){
     if(sh.got){if(sh.marker)sh.marker.visible=false;continue;}
     consider(sh,sh.aim,{type:'shard',ref:sh,marker:sh.marker});
+    // The case itself is what the courier looks at; its aim point can sit a step out in front of a shelf.
+    // Looking straight at the case from arm's reach works too, from any side the case can be seen.
+    if(q.current&&q.current.ref===sh)continue;
+    const v=sh.g.position,d=v.distanceTo(camera.position);
+    if(d<nd&&facing(v,2.3,.8)&&(sight(camera.position,v)||sight(camera.position,sh.aim))){nd=d;q.current={type:'shard',ref:sh,marker:sh.marker};}
   }
   if(q.current&&q.current.marker){q.current.marker.material.opacity=1;const m=q.current.marker;m.scale.multiplyScalar(1.5);}
   if(!q.current){const sheet=artLook();if(sheet)q.current={type:'art',sheet,label:()=>GALLERY.has(sheet.art)?bi('Підняти постер · є в галереї','Pick up the poster · in the gallery'):bi('Підняти постер','Pick up the poster')};}
@@ -5688,7 +5698,6 @@ const P={
 const keys={};
 addEventListener('keydown',e=>{
   keys[e.code]=true;
-  if(!e.repeat&&e.code==='KeyH')toggleHide();
   if(!e.repeat&&e.code==='KeyE'){if(Game.state==='find'){closeFind();return;}questInteract();findLaunch();}
   if(!e.repeat&&e.code==='KeyJ'&&QUEST){if(Game.state==='journal'){Game.state='play';hideScreen();lockPointer();}else openJournal();}
   if(e.code==='KeyF'&&Game.state==='play'){P.lampOn=!P.lampOn;Snd.flick();}
@@ -5928,7 +5937,7 @@ function keyRow(){
   return (TOUCH?T('keysTouch'):T('keys')).map(k=>`<kbd>${k}</kbd>`).join('');
 }
 function hideScreen(){
-  UI.ov.classList.add('hide');UI.hud.classList.add('on');
+  UI.ov.classList.add('hide');UI.hud.classList.add('on');requestAnimationFrame(placeLocation);
   document.getElementById('batwrap').style.display=(level&&level.calm)?'none':'block';
   document.getElementById('stam').style.display=(level&&level.calm)?'none':'block';
   if(TOUCH)document.getElementById('touch').classList.add('on');
@@ -6009,6 +6018,8 @@ const Game={
     hideScreen();
     Snd.init();
     if(Snd.ok&&Snd.ctx.state==='suspended')Snd.ctx.resume();
+    // the M key mutes for good; say so at the start of a run, so a silent game is never a mystery
+    if(Snd.muted)setTimeout(()=>{if(Game.state==='play'&&Snd.muted)toast(bi('Звук вимкнено. M, щоб увімкнути.','Sound is off. Press M to turn it on.'));},1200);
     lockPointer();
   },
   pause(){
@@ -6041,7 +6052,7 @@ function soundControls(){
 }
 const GFX_NAMES=[['ЛЕГКА','LIGHT'],['ЗБАЛАНСОВАНА','BALANCED'],['ВИСОКА','HIGH']];
 function gfxControl(){return `<button class="chip" id="gfxt" title="${bi('Зміна якості перезапускає гру','Changing quality restarts the game')}">${bi('ГРАФІКА: ','GRAPHICS: ')}${labelPair(GFX_NAMES[QUAL])}</button>`;}
-function soundLabel(){return Snd.muted?bi('ЗВУК ВИМК · M','SOUND OFF · M'):bi('ЗВУК · M','SOUND ON · M');}
+function soundLabel(){return Snd.muted?bi('ЗВУК ВИМК · M','SOUND OFF · M'):bi('ЗВУК УВІМК · M','SOUND ON · M');}
 function toggleMute(){
   Snd.setMuted(!Snd.muted);
   const b=document.getElementById('sndt');if(b){b.textContent=soundLabel();b.setAttribute('aria-pressed',String(Snd.muted));}
@@ -6346,6 +6357,7 @@ function menu(){
       <button class="chip" id="lbt">${bi('ЛІДЕРБОРД','LEADERBOARD')}</button>
       ${ART_SRC.length?`<button class="chip" id="galt">${bi('ГАЛЕРЕЯ','GALLERY')} · ${GALLERY.size}/${ART_SRC.length}</button>`:''}
       <button class="chip" id="fndt">${bi('ІГРИ','GAMES')} · ${FOUND.size}/${FINDS.length}</button>
+      ${GALLERY.size||FOUND.size?`<button class="chip" id="rstt">${bi('СКИНУТИ ПРОГРЕС','RESET PROGRESS')}</button>`:''}
       <button class="chip" id="langt">${LANG==='en'?'УКР':'ENG'}</button>
       ${soundControls()}
       ${gfxControl()}
@@ -6355,6 +6367,7 @@ function menu(){
   document.getElementById('lbt').onclick=()=>leaderboardScreen();
   {const g=document.getElementById('galt');if(g)g.onclick=()=>galleryScreen();}
   document.getElementById('fndt').onclick=()=>findsScreen();
+  {const r=document.getElementById('rstt');if(r)r.onclick=()=>resetScreen();}
 
   document.getElementById('s1').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();CHECKPOINT=null;Game.start(0);};
   if(TEST_TOOLS)document.getElementById('s2t').onclick=()=>{clearTimeout(typeTimer);Snd.init();stopBrief();Game.start(1);};
@@ -6395,7 +6408,7 @@ function buildWorld(l){
   P.battery=1;P.stam=1;P.lampOn=true;P.alive=true;P.bob=0;P.grace=0;
   Game.damage=0;Game.dangerLvl=0;
   level.echoSpawns.forEach(sp=>{const v=sp.clone();unstick(v,0.5);makeEcho(v);});
-  UI.objt.textContent=level.objective;document.getElementById('objf').textContent='';
+  UI.objt.textContent=level.objective;document.getElementById('objf').textContent='';requestAnimationFrame(placeLocation);
   seen=level.map?new Uint8Array(level.map.W*level.map.H):null;
   miniEl.style.display='none';
   pips(level.total,level.coded);updatePips();
@@ -6565,7 +6578,7 @@ function updateAssist(dt){
 }
 
 
-STR.ua.keys.push('H сховатися / вийти');STR.en.keys.push('H hide / leave');
+STR.ua.keys.push('E сховатися / вийти');STR.en.keys.push('E hide / leave');
 const HIDE={spots:[],active:null,witnesses:new Set(),lamp:true,returnPos:null,scares:new Set()};
 function buildHides(){}
 function nearHide(){
@@ -6608,7 +6621,7 @@ function updateHiding(){
  const b=document.getElementById('hideAction');
  const near=nearHide();
  b.style.display=Game.state==='play'&&(near||HIDE.active)?'block':'none';
- b.textContent=TOUCH?(HIDE.active?bi('ВИЙТИ З УКРИТТЯ','LEAVE SHELTER'):bi('СХОВАТИСЯ','HIDE')):(HIDE.active?bi('E / H · ВИЙТИ З УКРИТТЯ','E / H · LEAVE SHELTER'):bi('E / H · СХОВАТИСЯ В УКРИТТІ','E / H · HIDE IN SHELTER'));
+ b.textContent=TOUCH?(HIDE.active?bi('ВИЙТИ З УКРИТТЯ','LEAVE SHELTER'):bi('СХОВАТИСЯ','HIDE')):(HIDE.active?bi('E · ВИЙТИ З УКРИТТЯ','E · LEAVE SHELTER'):bi('E · СХОВАТИСЯ В УКРИТТІ','E · HIDE IN SHELTER'));
  if(HIDE.active){P.lampOn=false;P.noise=0;}
  if(QUEST){
   const sector=clamp(Math.floor((P.pos.x+26)/92),0,2),offset=P.pos.x-(-26+sector*92);
@@ -7098,6 +7111,22 @@ if(skipIntro){if(skipIntro!=='-')resultNick=skipIntro;document.getElementById('i
 addEventListener('keydown',e=>{if(e.code==='KeyM'&&!e.repeat&&!(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName)))toggleMute();});
 // Phones stop the sound when the browser goes to the background (another app, a call, a screenshot) and keep it
 // stopped until the page asks again from inside a touch. Every touch and key asks.
+// the room line sits right under the objective box, however many lines the box has
+function placeLocation(){const o=document.getElementById('obj'),l=document.getElementById('location');if(o&&l&&o.offsetHeight)l.style.top=(o.offsetTop+o.offsetHeight+8)+'px';}
+addEventListener('resize',()=>placeLocation());
+// wipes what this device keeps between runs: the found community games and the posters in the gallery
+function resetScreen(){
+  redrawScreen=resetScreen;
+  screen(`${eyebrow('OPTIMUM · DEAD RELAY')}<h2>${bi('Скинути прогрес?','Reset progress?')}</h2>
+    <div class="body rise">${bi('Знайдені ігри спільноти ('+FOUND.size+'/'+FINDS.length+') і постери в галереї ('+GALLERY.size+'/'+ART_SRC.length+') зникнуть з цього пристрою, і все можна буде шукати знову. Лідерборд залишиться як є.',
+      'Found community games ('+FOUND.size+'/'+FINDS.length+') and the posters in your gallery ('+GALLERY.size+'/'+ART_SRC.length+') will be cleared on this device, so you can hunt for them again. The leaderboard stays as it is.')}</div>
+    <div class="cta rise"><button class="pill primary" id="rstYes">${bi('Скинути','Reset')}</button><button class="pill quiet" id="rstNo">${bi('Назад','Back')}</button></div>`,false);
+  document.getElementById('rstNo').onclick=()=>menu();
+  document.getElementById('rstYes').onclick=()=>{
+    FOUND.clear();GALLERY.clear();store.set('deadrelay_finds','');store.set('deadrelay_gallery','');
+    menu();
+  };
+}
 function soundWake(){
   const c=Snd.ctx;if(!c||c.state==='running'||c.state==='closed')return;
   const p=c.resume();if(p&&p.catch)p.catch(()=>{});
