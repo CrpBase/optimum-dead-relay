@@ -5422,18 +5422,8 @@ function buildMeadow(){
     const handle=new THREE.Mesh(new THREE.TorusGeometry(.2,.032,8,32),gateTrim);handle.rotation.y=Math.PI/2;handle.position.set(-.31,2.2,-side*1.02);leaf.add(handle);
     gateLeaves.push({leaf,side});
   }
-  const gateCanvas=cvs(1024,440),gateInk=gateCanvas.getContext('2d'),gateTexture=tex(gateCanvas,1,1);
-  const gateSign=new THREE.Mesh(new THREE.PlaneGeometry(2.48,1.07),new THREE.MeshBasicMaterial({map:gateTexture}));
-  gateSign.position.set(-.28,3.45,0);gateSign.rotation.y=-Math.PI/2;gateLeaves[0].leaf.add(gateSign);
-  function paintGateState(){
-    const got=SHARDS.filter(s=>s.got).length;gateCount=got;
-    gateInk.fillStyle='#24483a';gateInk.fillRect(0,0,1024,440);
-    gateInk.textAlign='center';gateInk.fillStyle='#f5f2df';gateInk.font='600 88px Arial, sans-serif';
-    gateInk.fillText(gateMoving?bi('ВІДЧИНЯЄТЬСЯ','OPENING'):bi('ЗАЧИНЕНО','LOCKED'),512,168,950);
-    gateInk.font='42px Arial, sans-serif';gateInk.fillStyle='#c1dccc';
-    gateInk.fillText(bi('ФРАГМЕНТИ','FRAGMENTS')+'  '+Math.min(got,gateNeed)+' / '+gateNeed,512,284,930);
-    gateTexture.needsUpdate=true;
-  }
+  // the gate carries no lettering: the doors and the light curtain say enough
+  function paintGateState(){gateCount=SHARDS.filter(s=>s.got).length;}
   paintGateState();BOARDS.push(paintGateState);
   // A faint light curtain remains behind the physical doors during opening.
   const curtainMat=new THREE.ShaderMaterial({
